@@ -17,23 +17,12 @@ const io = socketUtil.init(server);
 
 // Middleware for parsing JSON
 app.use(express.json());
-// Define allowed origins
-const allowedOrigins = ['https://grambazer.gramsaba.in'];
-
-// Middleware for CORS
 app.use(cors({
-  origin: function(origin, callback){
-    // Allow requests with no origin (like mobile apps or CURL)
-    if(!origin) return callback(null, true);
-    if(allowedOrigins.indexOf(origin) === -1){
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
+  origin: ['https://grambazer.gramsaba.in/'], // Allow only your frontend
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true, // If you need to allow cookies or authorization headers
+  credentials: true, // Include credentials if needed
 }));
+
 // Setup routes
 app.get('/',(req,res)=>{
     res.send('This is gram bazer server');
