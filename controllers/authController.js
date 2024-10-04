@@ -46,7 +46,7 @@ exports.updateProfile = async (req, res) => {
 
 // Generate and send OTP
 exports.sendOTP = async (req, res) => {
-  const { email } = req.body;
+  const { email, name } = req.body;
   // Check if user already exists
   const user = await User.findOne({ email });
   if (user) return res.status(400).json({ message: 'Email already registered.' });
@@ -59,7 +59,7 @@ exports.sendOTP = async (req, res) => {
 
   try {
     // Send OTP via email (customize your sendEmail utility)
-    await sendEmail(email, 'Verify Your Email', `Your OTP is: ${otp}`);
+    await sendEmail(email, name, otp );
     
     return res.status(200).json({ message: 'OTP sent to your email.' });
   } catch (error) {

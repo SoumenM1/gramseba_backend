@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema({
   village: { type: String, required: false}, // Mandatory for sellers
 
   // KYC for sellers
-  kycVerified: { type: Boolean, default: false }, // To mark KYC status
+  kycVerified: { type: String, enum: ['pending', 'in_progress', 'verified'], default: 'pending' }, // To mark KYC status
   aadhaarImageUrl: { type: String, required: false }, // URL to uploaded Aadhaar image
 
   // Profile Image

@@ -3,7 +3,9 @@ const mongoose = require('mongoose');
 const shopSchema = new mongoose.Schema({
   name: { type: String, required: true },
   logo: { type: String },
-  description: { type: String, required: true },
+  description_e: { type: String, required: true },
+  description_b: { type: String, required: true },
+  address:{},
   location: { 
     type: { type: String, default: 'Point' },
     coordinates: { type: [Number], index: '2dsphere' }  // [longitude, latitude]
