@@ -18,7 +18,7 @@ const io = socketUtil.init(server);
 // Middleware for parsing JSON
 app.use(express.json());
 app.use(cors({
-  origin: ['https://grambazer.gramsaba.in/'], // Allow only your frontend
+  origin: ['https://grambazer.gramsaba.in','http://localhost:3000'], // Allow only your frontend
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true, // Include credentials if needed
 }));
