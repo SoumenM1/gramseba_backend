@@ -1,5 +1,6 @@
 const express = require('express');
-const { register, login, sendOTP, verifyOTPAndRegister } = require('../controllers/authController');
+const { register, login, sendOTP, verifyOTPAndRegister, updateProfile, getProfile } = require('../controllers/authController');
+const { protect } = require('../middlewares/authMiddleware');
 const router = express.Router();
 
 router.post('/register', register);
@@ -11,7 +12,10 @@ router.post('/send-otp', sendOTP);
 // Verify OTP and Register User API
 router.post('/verify-otp-register', verifyOTPAndRegister);
 
-// Profile update (after login)
-// router.put('/update-profile/:userId', updateProfile);
+// Update User Profile
+router.put('/update-profile', protect, updateProfile);
+
+// Get User Profile
+router.get('/profile', protect, getProfile);
 
 module.exports = router;

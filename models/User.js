@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema({
   aadhaarImageUrl: { type: String, required: false }, // URL to uploaded Aadhaar image
 
   // Profile Image
-  imageUrl: { type: String, required: false },     // URL of the profile image
+  imageUrl: { type: String, required: false,default:"https://firebasestorage.googleapis.com/v0/b/hello-app-ebcf1.appspot.com/o/grambazer%2Fuser_profiles%2Fgrambazer.png?alt=media&token=8745807f-64ae-40cd-b68a-9ef1a6981a1f" },     // URL of the profile image
 
   createdAt: { type: Date, default: Date.now },
 });

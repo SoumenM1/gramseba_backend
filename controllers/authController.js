@@ -22,25 +22,63 @@ exports.login = async (req, res, next) => {
   }
 };
 
-exports.updateProfile = async (req, res) => {
-  const { userId } = req.params;
-  const { email, phone } = req.body;
-
-  // Check if email or phone is already in use
-  const existingUser = await User.findOne({ 
-    $or: [{ email }, { phone }], 
-    _id: { $ne: userId } // Exclude current user
-  });
-  if (existingUser) {
-    return res.status(400).json({ message: 'Email or phone already in use.' });
-  }
-
+// Update User Profile
+exports.updateProfile = async (req, res, next) => {
   try {
-    // Update user profile
-    const updatedUser = await User.findByIdAndUpdate(userId, { email, phone }, { new: true });
-    return res.status(200).json({ message: 'Profile updated successfully.', user: updatedUser });
+    const { name, email, phone, state, district, pincode, village, imageUrl } = req.body;
+
+    // Build the update object
+    const updateFields = { name, email, phone, state, district, pincode, village, imageUrl };
+
+    // Remove undefined fields to prevent overwriting with undefined
+    Object.keys(updateFields).forEach(
+      (key) => updateFields[key] === undefined && delete updateFields[key]
+    );
+
+    // If password is being updated, hash it
+    if (req.body.password) {
+      const salt = await bcrypt.genSalt(10);
+      updateFields.password = await bcrypt.hash(req.body.password, salt);
+    }
+
+    // Update the user in the database
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id,
+      { $set: updateFields },
+      { new: true, runValidators: true }
+    ).select('-password'); // Exclude password from the response
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully.',
+      user: updatedUser,
+    });
   } catch (error) {
-    return res.status(500).json({ message: 'Failed to update profile.' });
+    // Handle duplicate key errors (e.g., email or phone already exists)
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyValue)[0];
+      return res.status(400).json({ success: false, message: `${field} already in use.` });
+    }
+
+    next(error);
+  }
+};
+
+// Get User Profile
+exports.getProfile = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password'); // Exclude password
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    next(error);
   }
 };
 

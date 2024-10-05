@@ -5,7 +5,7 @@ const shopSchema = new mongoose.Schema({
   logo: { type: String },
   description_e: { type: String, required: true },
   description_b: { type: String, required: true },
-  address:{},
+  address:{type: String, required: true},
   location: { 
     type: { type: String, default: 'Point' },
     coordinates: { type: [Number], index: '2dsphere' }  // [longitude, latitude]

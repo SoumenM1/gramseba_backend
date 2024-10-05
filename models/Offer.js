@@ -8,7 +8,7 @@ const offerSchema = new mongoose.Schema({
     type: { type: String, default: 'Point' },
     coordinates: [Number]  // [longitude, latitude]
   },
-  organization: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true }, // Only accessible by certain organizations
+  organization: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Only accessible by certain organizations
   createdAt: { type: Date, default: Date.now }
 });
 
