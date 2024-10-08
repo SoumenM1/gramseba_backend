@@ -17,12 +17,20 @@ const userSchema = new mongoose.Schema({
 
   // KYC for sellers
   kycVerified: { type: String, enum: ['pending', 'in_progress', 'verified'], default: 'pending' }, // To mark KYC status
-  aadhaarImageUrl: { type: String, required: false }, // URL to uploaded Aadhaar image
+  aadhaarFrontUrl: { type: String, required: false ,default:undefined},
+  aadhaarBackUrl: { type: String, required: false ,default:undefined}, // URL to uploaded Aadhaar image
 
   // Profile Image
-  imageUrl: { type: String, required: false,default:"https://firebasestorage.googleapis.com/v0/b/hello-app-ebcf1.appspot.com/o/grambazer%2Fuser_profiles%2Fgrambazer.png?alt=media&token=8745807f-64ae-40cd-b68a-9ef1a6981a1f" },     // URL of the profile image
+  imageUrl: { type: String, required: false,default:undefined },     // URL of the profile image
 
   createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+// Update updatedAt before saving
+userSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
 });
 
 // Hash password before saving user

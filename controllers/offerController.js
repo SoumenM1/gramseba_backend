@@ -39,14 +39,16 @@ exports.getOffersByLocation = async (req, res, next) => {
   try {
     const { longitude, latitude } = req.query;
 
-    const offers = await Offer.find({
-      location: {
-        $near: {
-          $geometry: { type: 'Point', coordinates: [longitude, latitude] },
-          $maxDistance: 10000  // 10km radius
-        }
-      }
-    }).populate('organization', 'name');
+    const offers = await Offer.find(
+    // {
+    //   location: {
+    //     $near: {
+    //       $geometry: { type: 'Point', coordinates: [longitude, latitude] },
+    //       $maxDistance: 10000  // 10km radius
+    //     }
+    //   }
+    // }
+    ).populate('organization', 'name');
 
     res.status(200).json({ success: true, offers });
   } catch (error) {

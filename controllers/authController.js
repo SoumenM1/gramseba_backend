@@ -3,6 +3,111 @@ const User = require('../models/User');
 const authService = require('../services/authService');
 const sendEmail = require('../utils/sendEmail'); 
 const otpStorage = new Map(); // Using local storage (can use Redis in production)
+const cloudinary = require('../config/cloudinaryConfig').cloudinary;
+
+exports.updateKYC = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID is missing from the request.',
+      });
+    }
+
+    // Destructure the fields from the request body
+    const { state, district, pincode, village, phone } = req.body;
+
+    // Validate required fields for KYC
+    if (!state || !district || !pincode || !village || !phone) {
+      return res.status(400).json({
+        success: false,
+        message: 'All fields (state, district, pincode, village, and phone) are required.',
+      });
+    }
+
+    // Validate pincode format (you can modify this based on your region)
+    if (!/^\d{6}$/.test(pincode)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid pincode. It should be a 6-digit number.',
+      });
+    }
+
+    // Initialize variables to store Cloudinary URLs
+    let aadhaarFrontUrl='', aadhaarBackUrl='', imageUrl ='';
+
+    // Check if Aadhaar Front image was uploaded and upload to Cloudinary
+    if (req.files?.aadhaarFront) {
+      const result = await  cloudinary.uploader.upload(req.files.aadhaarFront[0].path, {
+        folder: 'gram_bazer/kyc', // Folder where you want to store the image
+        public_id: `aadhaar-front-${userId}-${Date.now()}`, // Custom filename
+        resource_type: 'image', // Image type
+      });
+      aadhaarFrontUrl = result.secure_url; // Cloudinary URL
+    }
+
+    // Check if Aadhaar Back image was uploaded and upload to Cloudinary
+    if (req.files?.aadhaarBack) {
+      const result = await cloudinary.uploader.upload(req.files.aadhaarBack[0].path, {
+        folder: 'gram_bazer/kyc', // Folder where you want to store the image
+        public_id: `aadhaar-back-${userId}-${Date.now()}`, // Custom filename
+        resource_type: 'image', // Image type
+      });
+      aadhaarBackUrl = result.secure_url; // Cloudinary URL
+    }
+
+    // Check if user profile image was uploaded and upload to Cloudinary
+    if (req.files?.userImage) {
+      const result = await cloudinary.uploader.upload(req.files.userImage[0].path, {
+        folder: 'gram_bazer/kyc', // Folder where you want to store the image
+        public_id: `user-${userId}-${Date.now()}`, // Custom filename
+        resource_type: 'image', // Image type
+      });
+      imageUrl = result.secure_url; // Cloudinary URL
+    }
+console.log(imageUrl,aadhaarBackUrl,aadhaarFrontUrl)
+    // Update user KYC details in MongoDB
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        $set: {
+          state,
+          district,
+          pincode,
+          village,
+          phone,
+          aadhaarFrontUrl: aadhaarFrontUrl || undefined,
+          aadhaarBackUrl: aadhaarBackUrl || undefined,
+          kycVerified: 'in_progress', // Set KYC status to 'in_progress'
+          imageUrl: imageUrl || undefined,
+        },
+        updatedAt: Date.now(), // Update the `updatedAt` field
+      },
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'KYC details updated successfully',
+      data: updatedUser,
+    });
+  } catch (error) {
+    console.error('Error updating KYC:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server Error',
+    });
+  }
+};
+
 
 exports.register = async (req, res, next) => {
   try {
@@ -22,47 +127,6 @@ exports.login = async (req, res, next) => {
   }
 };
 
-// Update User Profile
-exports.updateProfile = async (req, res, next) => {
-  try {
-    const { name, email, phone, state, district, pincode, village, imageUrl } = req.body;
-
-    // Build the update object
-    const updateFields = { name, email, phone, state, district, pincode, village, imageUrl };
-
-    // Remove undefined fields to prevent overwriting with undefined
-    Object.keys(updateFields).forEach(
-      (key) => updateFields[key] === undefined && delete updateFields[key]
-    );
-
-    // If password is being updated, hash it
-    if (req.body.password) {
-      const salt = await bcrypt.genSalt(10);
-      updateFields.password = await bcrypt.hash(req.body.password, salt);
-    }
-
-    // Update the user in the database
-    const updatedUser = await User.findByIdAndUpdate(
-      req.user.id,
-      { $set: updateFields },
-      { new: true, runValidators: true }
-    ).select('-password'); // Exclude password from the response
-
-    res.status(200).json({
-      success: true,
-      message: 'Profile updated successfully.',
-      user: updatedUser,
-    });
-  } catch (error) {
-    // Handle duplicate key errors (e.g., email or phone already exists)
-    if (error.code === 11000) {
-      const field = Object.keys(error.keyValue)[0];
-      return res.status(400).json({ success: false, message: `${field} already in use.` });
-    }
-
-    next(error);
-  }
-};
 
 // Get User Profile
 exports.getProfile = async (req, res, next) => {
