@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const shopController = require('../controllers/shopController');
 const { protect } = require('../middlewares/authMiddleware');
+const {upload} = require('../middlewares/uploadMiddleware')
 
 // Seller creates a shop
-router.post('/create', protect, shopController.createShop);
+router.post('/create', protect, upload.fields([{ name: 'shopImage' }]),shopController.createShop);
 
 // Define the route for getting a single shop by ID
 router.get('/shops', protect, shopController.getShopBySellerId);

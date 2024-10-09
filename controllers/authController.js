@@ -4,6 +4,7 @@ const authService = require('../services/authService');
 const sendEmail = require('../utils/sendEmail'); 
 const otpStorage = new Map(); // Using local storage (can use Redis in production)
 const cloudinary = require('../config/cloudinaryConfig').cloudinary;
+const fs = require('fs');
 
 exports.updateKYC = async (req, res) => {
   try {
@@ -35,38 +36,47 @@ exports.updateKYC = async (req, res) => {
     }
 
     // Initialize variables to store Cloudinary URLs
-    let aadhaarFrontUrl='', aadhaarBackUrl='', imageUrl ='';
+    let aadhaarFrontUrl = '', aadhaarBackUrl = '', imageUrl = '';
 
     // Check if Aadhaar Front image was uploaded and upload to Cloudinary
     if (req.files?.aadhaarFront) {
-      const result = await  cloudinary.uploader.upload(req.files.aadhaarFront[0].path, {
-        folder: 'gram_bazer/kyc', // Folder where you want to store the image
-        public_id: `aadhaar-front-${userId}-${Date.now()}`, // Custom filename
-        resource_type: 'image', // Image type
+      const result = await cloudinary.uploader.upload(req.files.aadhaarFront[0].path, {
+        folder: 'gram_bazer/kyc',
+        public_id: `aadhaar-front-${userId}-${Date.now()}`,
+        resource_type: 'image',
       });
-      aadhaarFrontUrl = result.secure_url; // Cloudinary URL
+      aadhaarFrontUrl = result.secure_url;
+
+      // Remove the file from the local server after upload
+      fs.unlinkSync(req.files.aadhaarFront[0].path);
     }
 
     // Check if Aadhaar Back image was uploaded and upload to Cloudinary
     if (req.files?.aadhaarBack) {
       const result = await cloudinary.uploader.upload(req.files.aadhaarBack[0].path, {
-        folder: 'gram_bazer/kyc', // Folder where you want to store the image
-        public_id: `aadhaar-back-${userId}-${Date.now()}`, // Custom filename
-        resource_type: 'image', // Image type
+        folder: 'gram_bazer/kyc',
+        public_id: `aadhaar-back-${userId}-${Date.now()}`,
+        resource_type: 'image',
       });
-      aadhaarBackUrl = result.secure_url; // Cloudinary URL
+      aadhaarBackUrl = result.secure_url;
+
+      // Remove the file from the local server after upload
+      fs.unlinkSync(req.files.aadhaarBack[0].path);
     }
 
     // Check if user profile image was uploaded and upload to Cloudinary
     if (req.files?.userImage) {
       const result = await cloudinary.uploader.upload(req.files.userImage[0].path, {
-        folder: 'gram_bazer/kyc', // Folder where you want to store the image
-        public_id: `user-${userId}-${Date.now()}`, // Custom filename
-        resource_type: 'image', // Image type
+        folder: 'gram_bazer/kyc',
+        public_id: `user-${userId}-${Date.now()}`,
+        resource_type: 'image',
       });
-      imageUrl = result.secure_url; // Cloudinary URL
+      imageUrl = result.secure_url;
+
+      // Remove the file from the local server after upload
+      fs.unlinkSync(req.files.userImage[0].path);
     }
-console.log(imageUrl,aadhaarBackUrl,aadhaarFrontUrl)
+
     // Update user KYC details in MongoDB
     const updatedUser = await User.findByIdAndUpdate(
       userId,
@@ -82,9 +92,9 @@ console.log(imageUrl,aadhaarBackUrl,aadhaarFrontUrl)
           kycVerified: 'in_progress', // Set KYC status to 'in_progress'
           imageUrl: imageUrl || undefined,
         },
-        updatedAt: Date.now(), // Update the `updatedAt` field
+        updatedAt: Date.now(),
       },
-      { new: true } // Return the updated document
+      { new: true }
     );
 
     if (!updatedUser) {

@@ -1,51 +1,65 @@
-const { toArray } = require('cluster/lib/utils');
+const cloudinary = require('cloudinary').v2; // Ensure you have Cloudinary properly configured
 const Shop = require('../models/Shop');
+const fs = require('fs');
 
-// Create a new shop (Seller only)
 exports.createShop = async (req, res, next) => {
   try {
-    const { shopName, shopImage, openAndCloseTime, description_e, description_b, address, coordinates } = req.body;
+    const { shopName, openAndCloseTime, description_e, description_b, address, coordinates } = req.body;
 
     // Check if the user is a seller
     if (req.user.role !== 'seller') {
       return res.status(403).json({ message: 'Only sellers can create shops' });
     }
+
     // Ensure all required fields are present
     if (!shopName || !openAndCloseTime || !description_e || !description_b || !address || !coordinates) {
-    
       return res.status(400).json({ message: 'Please provide all required fields' });
     }
-  
-    function getCoordinates(jsonString) {
-      // Parse the JSON string into an object
-      const data = JSON.parse(jsonString);
-      // Return the coordinates as an array
-      return [data.lon, data.lat];
-  }   
 
-  // Check if a shop with the same name already exists
+    // Check if a shop with the same name already exists
     const existingShop = await Shop.findOne({ shopName, seller: req.user._id });
     if (existingShop) {
       return res.status(409).json({ message: 'Shop already exists' });
     }
+
+    // Upload shop image if provided
+    let shopImageUrl = '';
+    if (req.files?.shopImage) {
+      const result = await cloudinary.uploader.upload(req.files.shopImage[0].path, {
+        folder: 'gram_bazer/shops',
+        public_id: `shop-${req.user._id}-${Date.now()}`,
+        resource_type: 'image',
+      });
+      shopImageUrl = result.secure_url;
+
+      // Remove the local file after upload
+      fs.unlinkSync(req.files.shopImage[0].path);
+    }
+
+    // Parse coordinates
+    function getCoordinates(jsonString) {
+      const data = JSON.parse(jsonString);
+      return [data.lon, data.lat];
+    }
+
     // Create a new shop instance
     const shop = new Shop({
       shopName,
-      shopImage,
+      shopImage: shopImageUrl,
       openAndCloseTime,
       description_e, // English description
       description_b, // Bengali description
       address,
       location: {
         type: 'Point',
-        coordinates: getCoordinates(coordinates),  // [longitude, latitude] from req.body
+        coordinates: getCoordinates(coordinates), // [longitude, latitude]
       },
       seller: req.user._id, // The current authenticated user
     });
 
-    // // Save the shop in the database
+    // Save the shop in the database
     await shop.save();
-    res.status(201).json({ success: true ,shop});
+    res.status(201).json({ success: true, shop });
   } catch (error) {
     console.error('Error creating shop:', error);
     next(error);

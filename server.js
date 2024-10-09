@@ -32,7 +32,7 @@ app.use(cors({
 
 // Setup routes
 app.get('/',(req,res)=>{
-    res.send('This is gram bazer server');
+    res.send('This is grambazer server');
 })
 const authRoutes = require('./routes/authRoutes');
 const shopRoutes = require('./routes/shopRoutes');

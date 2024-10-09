@@ -13,7 +13,8 @@ const shopSchema = new mongoose.Schema({
   },
   seller: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   block: { type: String, required: false }, // Added block field (optional)
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
 });
 
 // Create a text index for the description fields (for both description_e and description_b)

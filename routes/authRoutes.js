@@ -1,11 +1,9 @@
 const express = require('express');
 const { register, login, sendOTP, verifyOTPAndRegister, updateProfile, getProfile, updateKYC } = require('../controllers/authController');
 const { protect } = require('../middlewares/authMiddleware');
-// const upload = require('../middlewares/uploadMiddleware')
+const {upload }= require('../middlewares/uploadMiddleware')
 const router = express.Router();
 
-const multer = require('multer');
-const upload = multer({ dest: 'uploads/' }); // Define the destination folder for uploaded files.
 
 // Use this in your route
 router.put('/update-kyc', protect, upload.fields([{ name: 'aadhaarFront' }, { name: 'aadhaarBack' }, { name: 'userImage' }]), updateKYC);
