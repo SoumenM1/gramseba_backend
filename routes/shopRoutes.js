@@ -16,4 +16,7 @@ router.get('/nearby', shopController.getShopsNearby);
 // Search shops by description and location
 router.get('/search',shopController.searchShops);
 
+// Route to get shop details by shopId
+router.get('/shop-details',  shopController.getShopDetails);
+
 module.exports = router;

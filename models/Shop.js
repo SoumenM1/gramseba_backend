@@ -12,7 +12,8 @@ const shopSchema = new mongoose.Schema({
     coordinates: { type: [Number], index: '2dsphere' }  // [longitude, latitude]
   },
   seller: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  block: { type: String, required: false }, // Added block field (optional)
+  block: { type: Boolean, required: false,default:false }, // Added block field (optional)
+  visibility:{type:String, require:false, default:'private'},
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });

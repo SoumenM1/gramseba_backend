@@ -38,10 +38,12 @@ const authRoutes = require('./routes/authRoutes');
 const shopRoutes = require('./routes/shopRoutes');
 const videoRoutes = require('./routes/videoRoutes');
 const offerRoutes = require('./routes/offerRoutes');
+const itemRoutes = require('./routes/itemRoutes')
 app.use('/api/auth', authRoutes);
 app.use('/api/shops', shopRoutes);
 app.use('/api/videos', videoRoutes);
 app.use('/api/offers', offerRoutes);
+app.use('/api/items', itemRoutes);
 
 app.use(errorHandler);
 // Socket.io connection

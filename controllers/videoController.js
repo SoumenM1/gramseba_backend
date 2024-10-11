@@ -1,33 +1,127 @@
 const Video = require('../models/Video');
 const socketUtil = require('../utils/socket');  // Import socket utility
+// const videoIntelligence = require('@google-cloud/video-intelligence');
+const cloudinary = require('../config/cloudinaryConfig').cloudinary;
+const fs = require('fs');
+const path = require('path');
 
-// Upload video and notify all users
+// Initialize the Video Intelligence client
+// const client = new videoIntelligence.VideoIntelligenceServiceClient();
+
+// async function checkVideoContent(videoUrl) {
+//   try {
+//     const request = {
+//       inputUri: videoUrl,  // The URL of the video to check
+//       features: ['EXPLICIT_CONTENT_DETECTION'],
+//     };
+
+//     // Perform video moderation analysis
+//     const [operation] = await client.annotateVideo(request);
+//     const [operationResult] = await operation.promise();
+
+//     const explicitContentResults = operationResult.annotationResults[0].explicitAnnotation;
+
+//     // Loop through the results and check for explicit content
+//     for (const frame of explicitContentResults.frames) {
+//       const timeOffset = (frame.timeOffset.seconds || 0) + (frame.timeOffset.nanos || 0) / 1e9;
+//       const pornographyLikelihood = frame.pornographyLikelihood;
+
+//       if (pornographyLikelihood >= 3) { // 3 is the threshold for 'LIKELY'
+//         return { success: false, message: `Explicit content detected at ${timeOffset}s` };
+//       }
+//     }
+//     return { success: true, message: 'No explicit content detected' };
+//   } catch (error) {
+//     console.error('Error checking video content:', error);
+//     return { success: false, message: 'Error checking video content' };
+//   }
+// }
+// Helper function to check for prohibited content
+function containsProhibitedContent(text) {
+  const prohibitedPatterns = [/violence/i, /sexual/i, /abuse/i, /offensive/i];
+  
+  // Check for any prohibited words/phrases in the text
+  return prohibitedPatterns.some(pattern => pattern.test(text));
+}
+
 exports.uploadVideo = async (req, res, next) => {
   try {
-    const { title, videoUrl } = req.body;
-
+    const { title, description } = req.body;
+    const videoFile = req.file; // Assuming you're using multer for file uploads
+    // console.log(title,description,videoFile)
+    // Ensure only sellers can upload videos
     if (req.user.role !== 'seller') {
       return res.status(403).json({ message: 'Only sellers can upload videos' });
     }
 
-    const video = new Video({
-      title,
-      videoUrl,
-      seller: req.user._id
+    // Validate required fields
+    if (!title || !description || !videoFile) {
+      return res.status(400).json({ message: 'Title, description, and video file are required' });
+    }
+
+    // Check for prohibited content in title or description
+    if (containsProhibitedContent(title) || containsProhibitedContent(description)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Your content violates our privacy policies. Please remove any prohibited content.',
+      });
+    }
+
+    // Upload the video to Cloudinary
+    const uploadPath = path.join(__dirname, `../uploads/${videoFile.filename}`);
+    const uploadResult = await cloudinary.uploader.upload(uploadPath, {
+      resource_type: 'video', // Specify the resource type as 'video'
+      folder: 'videos',       // Optional: Set folder name in Cloudinary
     });
 
+    // Video URL from Cloudinary
+    const videoUrl = uploadResult.secure_url;
+
+    // Perform video content moderation check (optional: depends on the service you use)
+    // const moderationResult = await checkVideoContent(videoUrl);
+    if (!videoUrl) {
+      return res.status(400).json({
+        success: false,
+        message: moderationResult.message, // e.g., "Explicit content detected at X seconds"
+      });
+    }
+
+    // Create a new video instance
+    const video = new Video({
+      title,
+      description,
+      videoUrl,
+      seller: req.user._id,
+    });
+
+    // Save the video to the database
     await video.save();
 
-    // Emit the new video notification to all users
+    // Notify all users about the new video using Socket.IO
     const io = socketUtil.getIO();
     io.emit('newVideo', { title: video.title, videoUrl: video.videoUrl });
 
-    res.status(201).json({ success: true, video });
+    // Delete the local file after uploading to Cloudinary
+    fs.unlinkSync(uploadPath);
+
+    // Respond with success
+    res.status(201).json({
+      success: true,
+      message: 'Video uploaded successfully',
+      video,
+    });
+
   } catch (error) {
-    next(error);
+    console.error('Error uploading video:', error);
+
+    // Delete local file if any error occurs
+    if (req.file && fs.existsSync(uploadPath)) {
+      fs.unlinkSync(uploadPath);
+    }
+
+    next(error); // Pass the error to the global error handler
   }
 };
-
 
 // Get all videos sorted by date (All users)
 exports.getAllVideos = async (req, res, next) => {
@@ -41,7 +135,6 @@ exports.getAllVideos = async (req, res, next) => {
   }
 };
 
-// Like a video
 exports.likeVideo = async (req, res, next) => {
   try {
     const video = await Video.findById(req.params.id);
@@ -49,9 +142,22 @@ exports.likeVideo = async (req, res, next) => {
       return res.status(404).json({ message: 'Video not found' });
     }
 
+    // Check if the user has already liked the video
+    const userId = req.user._id;  // Get user ID from the authenticated user
+    if (video.likedBy.includes(userId)) {
+      return res.status(400).json({ message: 'You have already liked this video' });
+    }
+
+    // Increase the like count and add the user to likedBy array
     video.likes += 1;
+    video.likedBy.push(userId);
     await video.save();
-    res.status(200).json({ success: true, likes: video.likes });
+
+    res.status(200).json({
+      success: true,
+      message: 'Video liked successfully',
+      likes: video.likes,
+    });
   } catch (error) {
     next(error);
   }
@@ -84,6 +190,71 @@ exports.incrementShares = async (req, res, next) => {
     video.shares += 1;
     await video.save();
     res.status(200).json({ success: true, shares: video.shares });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get all video IDs (only IDs)
+exports.getAllVideoIds = async (req, res, next) => {
+  try {
+    const videos = await Video.find({ seller: req.user._id });
+    res.status(200).json({
+      success: true,
+      videos,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Update video title and description
+exports.updateVideo = async (req, res, next) => {
+  const { id } = req.params;
+  const { title, description } = req.body;
+
+  try {
+    const video = await Video.findOneAndUpdate(
+      { _id: id, seller: req.user._id }, // Ensure the user can only update their own videos
+      { title, description },
+      { new: true }
+    );
+
+    if (!video) {
+      return res.status(404).json({ message: 'Video not found or not authorized' });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Video updated successfully',
+      video,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Delete video by ID
+exports.deleteVideo = async (req, res, next) => {
+  const { id } = req.params;
+
+  try {
+    const video = await Video.findOne({ _id: id, seller: req.user._id });
+    if (!video) {
+      return res.status(404).json({ message: 'Video not found or not authorized' });
+    }
+
+    // Delete video from Cloudinary (assuming videoUrl is stored in Cloudinary)
+    const publicId = video.videoUrl.split('/').pop().split('.')[0]; // Extract public ID from URL
+    await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
+
+    // Delete video from MongoDB
+    await Video.findByIdAndDelete(id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Video deleted successfully',
+    });
   } catch (error) {
     next(error);
   }

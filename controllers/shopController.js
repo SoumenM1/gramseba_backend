@@ -1,5 +1,6 @@
 const cloudinary = require('cloudinary').v2; // Ensure you have Cloudinary properly configured
 const Shop = require('../models/Shop');
+const Item = require('../models/Item')
 const fs = require('fs');
 
 exports.createShop = async (req, res, next) => {
@@ -154,3 +155,39 @@ exports.searchShops = async (req, res, next) => {
       next(error);
     }
   };
+
+  // Controller to get shop details by shopId
+exports.getShopDetails = async (req, res, next) => {
+  try {
+    const { shopId } = req.query;
+
+    // Validate that shopId is provided
+    if (!shopId) {
+      return res.status(400).json({ success: false, message: 'shopId is required in query parameters.' });
+    }
+
+    // Find the shop by ID and populate the seller details
+    const shop = await Shop.findById(shopId)
+      .populate({
+        path: 'seller',
+        select: '-password -__v', // Exclude sensitive fields
+      })
+      .lean(); // Convert to plain JavaScript object
+
+    if (!shop) {
+      return res.status(404).json({ success: false, message: 'Shop not found.' });
+    }
+
+    // Fetch all items associated with the shop
+    const items = await Item.find({ shop: shopId }).select('-shop').lean();
+
+    res.status(200).json({
+      success: true,
+      shop,
+      items,
+    });
+  } catch (error) {
+    console.error('Error fetching shop details:', error);
+    next(error); // Pass the error to the global error handler
+  }
+};
