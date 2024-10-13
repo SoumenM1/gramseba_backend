@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors')
 const http = require('http');
 // const morgan = require('morgan');
-const rateLimit = require('express-rate-limit');
+// const rateLimit = require('express-rate-limit');
 const socketUtil = require('./utils/socket'); 
 const dotenv = require('dotenv');
 const { errorHandler } = require('./middlewares/errorHandler');
@@ -17,11 +17,11 @@ const server = http.createServer(app);
 const io = socketUtil.init(server);
 
 // app.use(morgan('combined'));
-app.use(rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again after 15 minutes',
-}));
+// app.use(rateLimit({
+//   windowMs: 15 * 60 * 1000, // 15 minutes
+//   max: 100, // limit each IP to 100 requests per windowMs
+//   message: 'Too many requests from this IP, please try again after 15 minutes',
+// }));
 app.use(express.json());
 app.use(cors({
   origin: ['https://grambazer.gramsaba.in','http://localhost:3000'], // Allow only your frontend

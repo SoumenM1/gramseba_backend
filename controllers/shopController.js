@@ -1,4 +1,5 @@
 const cloudinary = require('cloudinary').v2; // Ensure you have Cloudinary properly configured
+const QRCode = require('qrcode');
 const Shop = require('../models/Shop');
 const Item = require('../models/Item')
 const fs = require('fs');
@@ -109,16 +110,16 @@ exports.getShopsNearby = async (req, res, next) => {
     }
 
     const shops = await Shop.find(
-      {
-      location: {
-        $geoWithin: {
-          $centerSphere: [
-            [longitude, latitude],  // [longitude, latitude]
-            10 / 6378.1  // 10km in radians (radius of Earth = 6378.1 km)
-          ]
-        }  
-      }
-    }
+      // {
+      // location: {
+      //   $geoWithin: {
+      //     $centerSphere: [
+      //       [longitude, latitude],  // [longitude, latitude]
+      //       10 / 6378.1  // 10km in radians (radius of Earth = 6378.1 km)
+      //     ]
+      //   }  
+      // }
+    // }
   ).populate('seller');
 
     res.status(200).json({ success: true, shops });
@@ -189,5 +190,56 @@ exports.getShopDetails = async (req, res, next) => {
   } catch (error) {
     console.error('Error fetching shop details:', error);
     next(error); // Pass the error to the global error handler
+  }
+};
+
+// Function to generate shop QR code and save it to Cloudinary and DB
+exports.generateShopQR = async (req, res, next) => {
+  try {
+    const shopId = req.params.shopId;
+    const shop = await Shop.findById(shopId);
+
+    if (!shop) {
+      return res.status(404).json({ message: 'Shop not found' });
+    }
+    const shopUrl = `https://grambazer.gramsaba.in/shop/${shopId}`;
+    // Check if QR code already exists
+    if (shop.qrCodeUrl) {
+      return res.status(200).json({
+        success: true,
+        message: 'QR code already exists', 
+        qrCodeUrl: shop.qrCodeUrl,
+        seller:shop.shopName,
+        shopurl:shopUrl
+      });
+    }
+
+    // Generate the QR code URL
+    const qrCodeDataURL = await QRCode.toDataURL(shopUrl);
+
+    // Upload the QR code to Cloudinary
+    const uploadResponse = await cloudinary.uploader.upload(qrCodeDataURL, {
+      folder: 'shop_qrcodes',
+      public_id: `shop_qr_${shopId}`,
+      overwrite: true,
+      format: 'png'
+    });
+
+    // Save the Cloudinary URL in the database
+    shop.qrCodeUrl = uploadResponse.secure_url;
+    await shop.save();
+
+    // Send the response with the QR code URL
+    res.status(201).json({
+      success: true,
+      message: 'QR code generated and saved successfully',
+      qrCodeUrl: shop.qrCodeUrl,
+      seller:shop.shopName,
+      shopurl:shopUrl
+    });
+
+  } catch (error) {
+    console.error('Error generating QR code:', error);
+    next(error); // Handle errors
   }
 };

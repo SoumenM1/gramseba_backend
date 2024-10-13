@@ -127,7 +127,10 @@ exports.uploadVideo = async (req, res, next) => {
 exports.getAllVideos = async (req, res, next) => {
   try {
     const videos = await Video.find()
-      .populate('seller', 'name')
+      .populate({
+        path: 'seller',
+        select: 'name imageUrl' // Use space to separate the fields
+      })
       .sort({ createdAt: -1 });  // Sort by date (newest first)
     res.status(200).json({ success: true, videos });
   } catch (error) {

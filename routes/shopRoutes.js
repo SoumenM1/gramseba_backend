@@ -19,4 +19,8 @@ router.get('/search',shopController.searchShops);
 // Route to get shop details by shopId
 router.get('/shop-details',  shopController.getShopDetails);
 
+// Route to generate a QR code for a shop
+router.get('/:shopId/generateQR', shopController.generateShopQR);
+
+
 module.exports = router;
