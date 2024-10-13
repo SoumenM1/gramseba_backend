@@ -25,7 +25,7 @@ const videoSchema = new mongoose.Schema({
     ref: 'User',
     required: true 
   },
-  isvideo:{type:Boolean,require:true, default:false},
+  isvideo:{type:Boolean,require:true},
   likes: { 
     type: Number, 
     default: 0 
