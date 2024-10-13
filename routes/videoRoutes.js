@@ -14,7 +14,7 @@ router.get('/all', videoController.getAllVideos);
 router.post('/:id/like', protect, videoController.likeVideo);
 
 // Increment video views
-router.post('/:id/view', videoController.incrementViews);
+router.post('/:id/view', protect,videoController.incrementViews);
 
 // Increment video shares
 router.post('/:id/share', protect, videoController.incrementShares);
