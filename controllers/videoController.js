@@ -81,7 +81,7 @@ exports.uploadVideo = async (req, res, next) => {
 
     if (mimeType.startsWith("video/")) {
       // Handle video upload with optimization
-      isVideo += true;
+      isVideo = true;
       const uploadResult = await cloudinary.uploader.upload(uploadPath, {
         resource_type: "video",
         folder: "videos",
@@ -119,7 +119,7 @@ exports.uploadVideo = async (req, res, next) => {
       description,
       videoUrl: isVideo ? mediaUrl : undefined,
       imageUrl: !isVideo ? mediaUrl : undefined,
-      isVideo,
+      isVideo: isVideo ? true : false,
       seller: req.user._id,
     });
 
