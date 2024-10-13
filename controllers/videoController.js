@@ -47,59 +47,83 @@ function containsProhibitedContent(text) {
 exports.uploadVideo = async (req, res, next) => {
   try {
     const { title, description } = req.body;
-    const videoFile = req.file; // Assuming you're using multer for file uploads
-    // console.log(title,description,videoFile)
-    // Ensure only sellers can upload videos
+    const mediaFile = req.file; // Assuming you're using multer for file uploads
+
+    // Ensure only sellers can upload media
     if (req.user.role !== 'seller') {
-      return res.status(403).json({ message: 'Only sellers can upload videos' });
+      return res.status(403).json({ message: 'Only sellers can upload media' });
     }
 
     // Validate required fields
-    if (!title || !description || !videoFile) {
-      return res.status(400).json({ message: 'Title, description, and video file are required' });
+    if (!title || !description || !mediaFile) {
+      return res.status(400).json({ message: 'Title, description, and media file are required' });
     }
 
-    // Check for prohibited content in title or description
-    if (containsProhibitedContent(title) || containsProhibitedContent(description)) {
+     // Check for prohibited content in title or description
+     if (containsProhibitedContent(title) || containsProhibitedContent(description)) {
       return res.status(400).json({
         success: false,
         message: 'Your content violates our privacy policies. Please remove any prohibited content.',
       });
     }
 
-    // Upload the video to Cloudinary
-    const uploadPath = path.join(__dirname, `../uploads/${videoFile.filename}`);
-    const uploadResult = await cloudinary.uploader.upload(uploadPath, {
-      resource_type: 'video', // Specify the resource type as 'video'
-      folder: 'videos',       // Optional: Set folder name in Cloudinary
-    });
+    // Determine the file type (image or video) based on MIME type
+    const mimeType = mediaFile.mimetype;
+    let isVideo = false;
+    let mediaUrl = '';
+    const uploadPath = path.join(__dirname, `../uploads/${mediaFile.filename}`);
 
-    // Video URL from Cloudinary
-    const videoUrl = uploadResult.secure_url;
-
-    // Perform video content moderation check (optional: depends on the service you use)
-    // const moderationResult = await checkVideoContent(videoUrl);
-    if (!videoUrl) {
-      return res.status(400).json({
-        success: false,
-        message: moderationResult.message, // e.g., "Explicit content detected at X seconds"
+    if (mimeType.startsWith('video/')) {
+      // Handle video upload with optimization
+      isVideo = true;
+      const uploadResult = await cloudinary.uploader.upload(uploadPath, {
+        resource_type: 'video',
+        folder: 'videos',
+        // Cloudinary transformation options for video optimization
+        quality: 'auto:best',  // Automatic best quality
+        fetch_format: 'auto',   // Automatic format selection (e.g., WebM for smaller size)
+        bit_rate: '500k',       // Adjust the bit rate for lower size
+        width: 720,             // Resize the video to 720p width
       });
+      mediaUrl = uploadResult.secure_url;
+
+    } else if (mimeType.startsWith('image/')) {
+      // Handle image upload with optimization
+      const uploadResult = await cloudinary.uploader.upload(uploadPath, {
+        resource_type: 'image',
+        folder: 'images',
+        // Cloudinary transformation options for image optimization
+        quality: 'auto:best',   // Automatic best quality compression
+        fetch_format: 'auto',   // Automatic format selection (e.g., WebP for smaller size)
+        width: 800,             // Resize the image to a max width of 800px
+        crop: 'limit',          // Ensure no upscaling and limit the resizing
+      });
+      mediaUrl = uploadResult.secure_url;
+    } else {
+      // Unsupported file type
+      return res.status(400).json({ message: 'Unsupported file type. Please upload an image or video.' });
     }
 
-    // Create a new video instance
-    const video = new Video({
+    // Create a new media instance
+    const media = new Video({
       title,
       description,
-      videoUrl,
+      videoUrl: isVideo ? mediaUrl : undefined,
+      imageUrl: !isVideo ? mediaUrl : undefined,
+      isVideo,
       seller: req.user._id,
     });
 
-    // Save the video to the database
-    await video.save();
+    // Save the media to the database
+    await media.save();
 
-    // Notify all users about the new video using Socket.IO
+    // Notify all users about the new media using Socket.IO
     const io = socketUtil.getIO();
-    io.emit('newVideo', { title: video.title, videoUrl: video.videoUrl });
+    io.emit('newMedia', {
+      title: media.title,
+      mediaUrl: mediaUrl,
+      isVideo: media.isVideo,
+    });
 
     // Delete the local file after uploading to Cloudinary
     fs.unlinkSync(uploadPath);
@@ -107,12 +131,12 @@ exports.uploadVideo = async (req, res, next) => {
     // Respond with success
     res.status(201).json({
       success: true,
-      message: 'Video uploaded successfully',
-      video,
+      message: 'Media uploaded and optimized successfully',
+      media,
     });
 
   } catch (error) {
-    console.error('Error uploading video:', error);
+    console.error('Error uploading media:', error);
 
     // Delete local file if any error occurs
     if (req.file && fs.existsSync(uploadPath)) {
