@@ -200,16 +200,26 @@ exports.likeVideo = async (req, res, next) => {
   }
 };
 
-// Increment views
+// Increment views only once per user
 exports.incrementViews = async (req, res, next) => {
   try {
+    const userId = req.user._id; // Assuming user ID is coming from the authenticated token
     const video = await Video.findById(req.params.id);
+    
     if (!video) {
       return res.status(404).json({ message: "Video not found" });
     }
 
-    video.views += 1;
-    await video.save();
+    // Check if the user has already viewed the video
+    const hasViewed = video.viewedBy.includes(userId);
+
+    if (!hasViewed) {
+      // Increment the views and add the user to the viewedBy array
+      video.views += 1;
+      video.viewedBy.push(userId);
+      await video.save();
+    }
+
     res.status(200).json({ success: true, views: video.views });
   } catch (error) {
     next(error);
