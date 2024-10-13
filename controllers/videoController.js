@@ -119,7 +119,7 @@ exports.uploadVideo = async (req, res, next) => {
       description,
       videoUrl: isVideo ? mediaUrl : undefined,
       imageUrl: !isVideo ? mediaUrl : undefined,
-      isVideo,
+      isVideo:isVideo ? true : false,
       seller: req.user._id,
     });
 
