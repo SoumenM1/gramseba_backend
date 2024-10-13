@@ -110,16 +110,16 @@ exports.getShopsNearby = async (req, res, next) => {
     }
 
     const shops = await Shop.find(
-      // {
-      // location: {
-      //   $geoWithin: {
-      //     $centerSphere: [
-      //       [longitude, latitude],  // [longitude, latitude]
-      //       10 / 6378.1  // 10km in radians (radius of Earth = 6378.1 km)
-      //     ]
-      //   }  
-      // }
-    // }
+      {
+      location: {
+        $geoWithin: {
+          $centerSphere: [
+            [longitude, latitude],  // [longitude, latitude]
+            10 / 6378.1  // 10km in radians (radius of Earth = 6378.1 km)
+          ]
+        }  
+      }
+    }
   ).populate('seller');
 
     res.status(200).json({ success: true, shops });
