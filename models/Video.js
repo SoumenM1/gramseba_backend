@@ -12,12 +12,18 @@ const videoSchema = new mongoose.Schema({
   },
   videoUrl: { 
     type: String, 
-    required: true 
+    unique: true, 
+    sparse: true 
+  },
+  imageUrl: { 
+    type: String, 
+    unique: true, 
+    sparse: true 
   },
   seller: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'User',
-    required: true
+    required: true 
   },
   likes: { 
     type: Number, 
@@ -53,5 +59,14 @@ const videoSchema = new mongoose.Schema({
   },
 });
 
-// Create and export the Video model
+// Pre-save middleware to update the `updatedAt` field automatically
+videoSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
+});
+
+// Add an index for performance on frequently queried fields (e.g., sorting, filtering)
+videoSchema.index({ seller: 1 });
+videoSchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model('Video', videoSchema);

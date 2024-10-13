@@ -1,9 +1,9 @@
-const Video = require('../models/Video');
-const socketUtil = require('../utils/socket');  // Import socket utility
+const Video = require("../models/Video");
+const socketUtil = require("../utils/socket"); // Import socket utility
 // const videoIntelligence = require('@google-cloud/video-intelligence');
-const cloudinary = require('../config/cloudinaryConfig').cloudinary;
-const fs = require('fs');
-const path = require('path');
+const cloudinary = require("../config/cloudinaryConfig").cloudinary;
+const fs = require("fs");
+const path = require("path");
 
 // Initialize the Video Intelligence client
 // const client = new videoIntelligence.VideoIntelligenceServiceClient();
@@ -39,9 +39,9 @@ const path = require('path');
 // Helper function to check for prohibited content
 function containsProhibitedContent(text) {
   const prohibitedPatterns = [/violence/i, /sexual/i, /abuse/i, /offensive/i];
-  
+
   // Check for any prohibited words/phrases in the text
-  return prohibitedPatterns.some(pattern => pattern.test(text));
+  return prohibitedPatterns.some((pattern) => pattern.test(text));
 }
 
 exports.uploadVideo = async (req, res, next) => {
@@ -50,58 +50,67 @@ exports.uploadVideo = async (req, res, next) => {
     const mediaFile = req.file; // Assuming you're using multer for file uploads
 
     // Ensure only sellers can upload media
-    if (req.user.role !== 'seller') {
-      return res.status(403).json({ message: 'Only sellers can upload media' });
+    if (req.user.role !== "seller") {
+      return res.status(403).json({ message: "Only sellers can upload media" });
     }
 
     // Validate required fields
     if (!title || !description || !mediaFile) {
-      return res.status(400).json({ message: 'Title, description, and media file are required' });
+      return res
+        .status(400)
+        .json({ message: "Title, description, and media file are required" });
     }
 
-     // Check for prohibited content in title or description
-     if (containsProhibitedContent(title) || containsProhibitedContent(description)) {
+    // Check for prohibited content in title or description
+    if (
+      containsProhibitedContent(title) ||
+      containsProhibitedContent(description)
+    ) {
       return res.status(400).json({
         success: false,
-        message: 'Your content violates our privacy policies. Please remove any prohibited content.',
+        message:
+          "Your content violates our privacy policies. Please remove any prohibited content.",
       });
     }
 
     // Determine the file type (image or video) based on MIME type
     const mimeType = mediaFile.mimetype;
     let isVideo = false;
-    let mediaUrl = '';
+    let mediaUrl = "";
     const uploadPath = path.join(__dirname, `../uploads/${mediaFile.filename}`);
 
-    if (mimeType.startsWith('video/')) {
+    if (mimeType.startsWith("video/")) {
       // Handle video upload with optimization
       isVideo = true;
       const uploadResult = await cloudinary.uploader.upload(uploadPath, {
-        resource_type: 'video',
-        folder: 'videos',
+        resource_type: "video",
+        folder: "videos",
         // Cloudinary transformation options for video optimization
-        quality: 'auto:best',  // Automatic best quality
-        fetch_format: 'auto',   // Automatic format selection (e.g., WebM for smaller size)
-        bit_rate: '500k',       // Adjust the bit rate for lower size
-        width: 720,             // Resize the video to 720p width
+        quality: "auto:best", // Automatic best quality
+        fetch_format: "auto", // Automatic format selection (e.g., WebM for smaller size)
+        bit_rate: "500k", // Adjust the bit rate for lower size
+        width: 720, // Resize the video to 720p width
       });
       mediaUrl = uploadResult.secure_url;
-
-    } else if (mimeType.startsWith('image/')) {
+    } else if (mimeType.startsWith("image/")) {
       // Handle image upload with optimization
       const uploadResult = await cloudinary.uploader.upload(uploadPath, {
-        resource_type: 'image',
-        folder: 'images',
+        resource_type: "image",
+        folder: "images",
         // Cloudinary transformation options for image optimization
-        quality: 'auto:best',   // Automatic best quality compression
-        fetch_format: 'auto',   // Automatic format selection (e.g., WebP for smaller size)
-        width: 800,             // Resize the image to a max width of 800px
-        crop: 'limit',          // Ensure no upscaling and limit the resizing
+        quality: "auto:best", // Automatic best quality compression
+        fetch_format: "auto", // Automatic format selection (e.g., WebP for smaller size)
+        width: 800, // Resize the image to a max width of 800px
+        crop: "limit", // Ensure no upscaling and limit the resizing
       });
       mediaUrl = uploadResult.secure_url;
     } else {
       // Unsupported file type
-      return res.status(400).json({ message: 'Unsupported file type. Please upload an image or video.' });
+      return res
+        .status(400)
+        .json({
+          message: "Unsupported file type. Please upload an image or video.",
+        });
     }
 
     // Create a new media instance
@@ -119,7 +128,7 @@ exports.uploadVideo = async (req, res, next) => {
 
     // Notify all users about the new media using Socket.IO
     const io = socketUtil.getIO();
-    io.emit('newMedia', {
+    io.emit("newMedia", {
       title: media.title,
       mediaUrl: mediaUrl,
       isVideo: media.isVideo,
@@ -131,12 +140,11 @@ exports.uploadVideo = async (req, res, next) => {
     // Respond with success
     res.status(201).json({
       success: true,
-      message: 'Media uploaded and optimized successfully',
+      message: "Media uploaded and optimized successfully",
       media,
     });
-
   } catch (error) {
-    console.error('Error uploading media:', error);
+    console.error("Error uploading media:", error);
 
     // Delete local file if any error occurs
     if (req.file && fs.existsSync(uploadPath)) {
@@ -152,10 +160,10 @@ exports.getAllVideos = async (req, res, next) => {
   try {
     const videos = await Video.find()
       .populate({
-        path: 'seller',
-        select: 'name imageUrl' // Use space to separate the fields
+        path: "seller",
+        select: "name imageUrl", // Use space to separate the fields
       })
-      .sort({ createdAt: -1 });  // Sort by date (newest first)
+      .sort({ createdAt: -1 }); // Sort by date (newest first)
     res.status(200).json({ success: true, videos });
   } catch (error) {
     next(error);
@@ -166,13 +174,15 @@ exports.likeVideo = async (req, res, next) => {
   try {
     const video = await Video.findById(req.params.id);
     if (!video) {
-      return res.status(404).json({ message: 'Video not found' });
+      return res.status(404).json({ message: "Video not found" });
     }
 
     // Check if the user has already liked the video
-    const userId = req.user._id;  // Get user ID from the authenticated user
+    const userId = req.user._id; // Get user ID from the authenticated user
     if (video.likedBy.includes(userId)) {
-      return res.status(400).json({ message: 'You have already liked this video' });
+      return res
+        .status(400)
+        .json({ message: "You have already liked this video" });
     }
 
     // Increase the like count and add the user to likedBy array
@@ -182,7 +192,7 @@ exports.likeVideo = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: 'Video liked successfully',
+      message: "Video liked successfully",
       likes: video.likes,
     });
   } catch (error) {
@@ -195,7 +205,7 @@ exports.incrementViews = async (req, res, next) => {
   try {
     const video = await Video.findById(req.params.id);
     if (!video) {
-      return res.status(404).json({ message: 'Video not found' });
+      return res.status(404).json({ message: "Video not found" });
     }
 
     video.views += 1;
@@ -211,7 +221,7 @@ exports.incrementShares = async (req, res, next) => {
   try {
     const video = await Video.findById(req.params.id);
     if (!video) {
-      return res.status(404).json({ message: 'Video not found' });
+      return res.status(404).json({ message: "Video not found" });
     }
 
     video.shares += 1;
@@ -248,12 +258,14 @@ exports.updateVideo = async (req, res, next) => {
     );
 
     if (!video) {
-      return res.status(404).json({ message: 'Video not found or not authorized' });
+      return res
+        .status(404)
+        .json({ message: "Video not found or not authorized" });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Video updated successfully',
+      message: "Video updated successfully",
       video,
     });
   } catch (error) {
@@ -268,19 +280,21 @@ exports.deleteVideo = async (req, res, next) => {
   try {
     const video = await Video.findOne({ _id: id, seller: req.user._id });
     if (!video) {
-      return res.status(404).json({ message: 'Video not found or not authorized' });
+      return res
+        .status(404)
+        .json({ message: "Video not found or not authorized" });
     }
 
     // Delete video from Cloudinary (assuming videoUrl is stored in Cloudinary)
-    const publicId = video.videoUrl.split('/').pop().split('.')[0]; // Extract public ID from URL
-    await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
+    const publicId = video.videoUrl.split("/").pop().split(".")[0]; // Extract public ID from URL
+    await cloudinary.uploader.destroy(publicId, { resource_type: "video" });
 
     // Delete video from MongoDB
     await Video.findByIdAndDelete(id);
 
     res.status(200).json({
       success: true,
-      message: 'Video deleted successfully',
+      message: "Video deleted successfully",
     });
   } catch (error) {
     next(error);
