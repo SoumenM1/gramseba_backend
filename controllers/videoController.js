@@ -81,15 +81,15 @@ exports.uploadVideo = async (req, res, next) => {
 
     if (mimeType.startsWith("video/")) {
       // Handle video upload with optimization
-      isVideo = true;
+      isVideo += true;
       const uploadResult = await cloudinary.uploader.upload(uploadPath, {
         resource_type: "video",
         folder: "videos",
         // Cloudinary transformation options for video optimization
         quality: "auto:best", // Automatic best quality
         fetch_format: "auto", // Automatic format selection (e.g., WebM for smaller size)
-        // bit_rate: "500k", // Adjust the bit rate for lower size
-        // width: 720, // Resize the video to 720p width
+        bit_rate: "500k", // Adjust the bit rate for lower size
+        width: 720, // Resize the video to 720p width
       });
       mediaUrl = uploadResult.secure_url;
     } else if (mimeType.startsWith("image/")) {
