@@ -209,16 +209,15 @@ exports.incrementViews = async (req, res, next) => {
     if (!video) {
       return res.status(404).json({ message: "Video not found" });
     }
-
-    // Check if the user has already viewed the video
-    const hasViewed = video.viewedBy.includes(userId);
-
-    if (!hasViewed) {
-      // Increment the views and add the user to the viewedBy array
+    if (video.viewedBy.includes(userId)) {
+      return res
+        .status(400)
+        .json({ message: "You have already views this video" });
+    }
+   
       video.views += 1;
       video.viewedBy.push(userId);
       await video.save();
-    }
 
     res.status(200).json({ success: true, views: video.views });
   } catch (error) {
