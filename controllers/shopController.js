@@ -6,7 +6,7 @@ const fs = require('fs');
 
 exports.createShop = async (req, res, next) => {
   try {
-    const { shopName, openAndCloseTime, description_e, description_b, address, coordinates } = req.body;
+    const { shopName, category, openAndCloseTime, description_e, description_b, address, coordinates } = req.body;
 
     // Check if the user is a seller
     if (req.user.role !== 'seller') {
@@ -14,7 +14,7 @@ exports.createShop = async (req, res, next) => {
     }
 
     // Ensure all required fields are present
-    if (!shopName || !openAndCloseTime || !description_e || !description_b || !address || !coordinates) {
+    if (!shopName || !category || !openAndCloseTime || !description_e || !description_b || !address || !coordinates) {
       return res.status(400).json({ message: 'Please provide all required fields' });
     }
 
@@ -47,6 +47,7 @@ exports.createShop = async (req, res, next) => {
     // Create a new shop instance
     const shop = new Shop({
       shopName,
+      category,
       shopImage: shopImageUrl,
       openAndCloseTime,
       description_e, // English description
