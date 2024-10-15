@@ -19,7 +19,7 @@ const shopSchema = new mongoose.Schema({
   seller: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   qrCodeUrl: { type: String },
   block: { type: Boolean, required: false, default: false }, // Added block field (optional)
-  visibility: { type: String, require: false, default: "private" },
+  visibility: { type: String, require: false, default: "public" },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
