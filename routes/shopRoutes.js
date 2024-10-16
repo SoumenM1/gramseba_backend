@@ -11,7 +11,7 @@ router.post('/create', protect, upload.fields([{ name: 'shopImage' }]),shopContr
 router.get('/shops', protect, shopController.getShopBySellerId);
 
 // Get all shops within 10km radius
-router.get('/nearby', shopController.getShopsNearby);
+router.get('/nearby',protect, shopController.getShopsNearby);
 
 // Search shops by description and location
 router.get('/search',shopController.searchShops);
