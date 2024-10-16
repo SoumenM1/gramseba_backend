@@ -20,8 +20,6 @@ exports.createShop = async (req, res, next) => {
     if (req.user.role !== "seller") {
       return res.status(403).json({ message: "Only sellers can create shops" });
     }
-
-    // Ensure all required fields are present
     if (
       !shopName ||
       !category ||
@@ -51,11 +49,15 @@ exports.createShop = async (req, res, next) => {
           folder: "gram_bazer/shops",
           public_id: `shop-${req.user._id}-${Date.now()}`,
           resource_type: "image",
+          transformation: [
+            { width: 800, height: 800, crop: 'limit' }, 
+            { quality: 'auto:good' }, 
+            { fetch_format: 'auto' } 
+          ]
         }
       );
       shopImageUrl = result.secure_url;
 
-      // Remove the local file after upload
       fs.unlinkSync(req.files.shopImage[0].path);
     }
 

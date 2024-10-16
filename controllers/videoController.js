@@ -131,7 +131,7 @@ exports.uploadVideo = async (req, res, next) => {
     io.emit("newMedia", {
       title: media.title,
       mediaUrl: mediaUrl,
-      isVideo: media.isVideo,
+      isVideo: media.isvideo,
     });
 
     // Delete the local file after uploading to Cloudinary

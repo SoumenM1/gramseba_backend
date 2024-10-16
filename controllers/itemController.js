@@ -10,14 +10,11 @@ const isSellerOfShop = async (shopId, userId) => {
   if (!shop) return false;
   return shop.seller.toString() === userId.toString();
 };
-
 // Create a new item
 exports.createItem = async (req, res, next) => {
   try {
     const { shopId, title, description, price } = req.body;
     const itemImage = req.file; // Multer's single file
-
-    // Validate required fields
     if (!shopId || !title || !description || !price || !itemImage) {
       // Remove the uploaded file if validation fails
       if (itemImage && fs.existsSync(itemImage.path)) {
@@ -25,8 +22,6 @@ exports.createItem = async (req, res, next) => {
       }
       return res.status(400).json({ success: false, message: 'All fields are required.' });
     }
-
-    // Check if the authenticated user is the seller of the shop
     const isSeller = await isSellerOfShop(shopId, req.user._id);
     if (!isSeller) {
       // Remove the uploaded file if user is not the seller
@@ -35,16 +30,18 @@ exports.createItem = async (req, res, next) => {
       }
       return res.status(403).json({ success: false, message: 'You are not authorized to add items to this shop.' });
     }
-
     // Upload the image to Cloudinary
     const uploadResult = await cloudinary.uploader.upload(itemImage.path, {
       folder: 'gram_bazer/items',
       public_id: `item-${shopId}-${Date.now()}`,
       resource_type: 'image',
+      transformation: [
+        { width: 800, height: 800, crop: 'limit' }, 
+        { quality: 'auto:good' }, 
+        { fetch_format: 'auto' }
+      ]
     });
-
     const imageUrl = uploadResult.secure_url;
-
     // Remove the local image file after uploading
     fs.unlinkSync(itemImage.path);
 
@@ -73,7 +70,6 @@ exports.createItem = async (req, res, next) => {
     next(error);
   }
 };
-
 // Update an existing item (title, description, price, image)
 exports.updateItem = async (req, res, next) => {
   try {
@@ -146,7 +142,6 @@ exports.updateItem = async (req, res, next) => {
     next(error);
   }
 };
-
 // Delete an item
 exports.deleteItem = async (req, res, next) => {
   try {

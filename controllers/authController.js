@@ -2,7 +2,7 @@ const crypto = require('crypto');
 const User = require('../models/User');
 const authService = require('../services/authService');
 const sendEmail = require('../utils/sendEmail'); 
-const otpStorage = new Map(); // Using local storage (can use Redis in production)
+const otpStorage = new Map(); 
 const cloudinary = require('../config/cloudinaryConfig').cloudinary;
 const fs = require('fs');
 
@@ -15,69 +15,62 @@ exports.updateKYC = async (req, res) => {
         message: 'User ID is missing from the request.',
       });
     }
-
-    // Destructure the fields from the request body
     const { state, district, pincode, village, phone } = req.body;
-
-    // Validate required fields for KYC
     if (!state || !district || !pincode || !village || !phone) {
       return res.status(400).json({
         success: false,
         message: 'All fields (state, district, pincode, village, and phone) are required.',
       });
     }
-
-    // Validate pincode format (you can modify this based on your region)
     if (!/^\d{6}$/.test(pincode)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid pincode. It should be a 6-digit number.',
       });
     }
-
-    // Initialize variables to store Cloudinary URLs
     let aadhaarFrontUrl = '', aadhaarBackUrl = '', imageUrl = '';
-
-    // Check if Aadhaar Front image was uploaded and upload to Cloudinary
     if (req.files?.aadhaarFront) {
       const result = await cloudinary.uploader.upload(req.files.aadhaarFront[0].path, {
         folder: 'gram_bazer/kyc',
         public_id: `aadhaar-front-${userId}-${Date.now()}`,
         resource_type: 'image',
+        transformation: [
+          { width: 800, height: 800, crop: 'limit' }, 
+          { quality: 'auto:good' },
+          { fetch_format: 'auto' } 
+        ],
       });
       aadhaarFrontUrl = result.secure_url;
-
-      // Remove the file from the local server after upload
       fs.unlinkSync(req.files.aadhaarFront[0].path);
     }
-
-    // Check if Aadhaar Back image was uploaded and upload to Cloudinary
     if (req.files?.aadhaarBack) {
       const result = await cloudinary.uploader.upload(req.files.aadhaarBack[0].path, {
         folder: 'gram_bazer/kyc',
         public_id: `aadhaar-back-${userId}-${Date.now()}`,
         resource_type: 'image',
+        transformation: [
+          { width: 800, height: 800, crop: 'limit' }, 
+          { quality: 'auto:good' },
+          { fetch_format: 'auto' }
+        ]
       });
       aadhaarBackUrl = result.secure_url;
-
-      // Remove the file from the local server after upload
       fs.unlinkSync(req.files.aadhaarBack[0].path);
     }
-
-    // Check if user profile image was uploaded and upload to Cloudinary
     if (req.files?.userImage) {
       const result = await cloudinary.uploader.upload(req.files.userImage[0].path, {
         folder: 'gram_bazer/kyc',
         public_id: `user-${userId}-${Date.now()}`,
         resource_type: 'image',
+        transformation: [
+          { width: 800, height: 800, crop: 'limit' }, 
+          { quality: 'auto:good' }, 
+          { fetch_format: 'auto' }
+        ]
       });
       imageUrl = result.secure_url;
-
-      // Remove the file from the local server after upload
       fs.unlinkSync(req.files.userImage[0].path);
     }
-
-    // Update user KYC details in MongoDB
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       {
@@ -89,7 +82,7 @@ exports.updateKYC = async (req, res) => {
           phone,
           aadhaarFrontUrl: aadhaarFrontUrl || undefined,
           aadhaarBackUrl: aadhaarBackUrl || undefined,
-          kycVerified: 'in_progress', // Set KYC status to 'in_progress'
+          kycVerified: 'in_progress',
           imageUrl: imageUrl || undefined,
         },
         updatedAt: Date.now(),
@@ -118,7 +111,6 @@ exports.updateKYC = async (req, res) => {
   }
 };
 
-
 exports.register = async (req, res, next) => {
   try {
     const user = await authService.register(req.body);
@@ -136,7 +128,6 @@ exports.login = async (req, res, next) => {
     next(error);
   }
 };
-
 
 // Get User Profile
 exports.getProfile = async (req, res, next) => {
