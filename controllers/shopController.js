@@ -101,7 +101,24 @@ exports.getShopBySellerId = async (req, res) => {
   }
 };
 
-// Get all shops within 10km of a given location
+// Function to calculate the distance using the Haversine formula
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371e3; // Earth's radius in meters
+  const φ1 = (lat1 * Math.PI) / 180; // φ, λ in radians
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  const distance = R * c; // in meters
+  return distance;
+}
+
+// Controller to get shops nearby, sorted by distance
 exports.getShopsNearby = async (req, res, next) => {
   try {
     const { longitude, latitude } = req.query;
@@ -110,25 +127,45 @@ exports.getShopsNearby = async (req, res, next) => {
       return res.status(400).json({ message: 'Please provide longitude and latitude' });
     }
 
-    const shops = await Shop.find(
-      {
+    // Find shops within 10km radius
+    const shops = await Shop.find({
       location: {
         $geoWithin: {
           $centerSphere: [
             [longitude, latitude],  // [longitude, latitude]
-            10 / 6378.1  // 10km in radians (radius of Earth = 6378.1 km)
+            10 / 6378.1  // 10km in radians (Earth radius = 6378.1 km)
           ]
-        }  
+        }
       }
-    }
-  ).populate('seller');
+    }).populate('seller');
 
-    res.status(200).json({ success: true, shops });
+    // Calculate distance for each shop and add it to the response
+    const userLat = parseFloat(latitude);
+    const userLon = parseFloat(longitude);
+
+    const shopsWithDistance = shops.map((shop) => {
+      const shopLon = shop.location.coordinates[0];
+      const shopLat = shop.location.coordinates[1];
+
+      // Calculate distance in meters
+      const distanceInMeters = calculateDistance(userLat, userLon, shopLat, shopLon);
+
+      return {
+        ...shop._doc,
+        distance: distanceInMeters > 1000
+          ? `${(distanceInMeters / 1000).toFixed(2)} km`
+          : `${Math.round(distanceInMeters)} m`,
+      };
+    });
+
+    // Sort shops by distance (nearest first)
+    const sortedShops = shopsWithDistance.sort((a, b) => b.distance - a.distance);
+
+    res.status(200).json({ success: true, shops: sortedShops });
   } catch (error) {
     next(error);
   }
 };
-
 
 // Search for shops within a 10km radius and matching description
 exports.searchShops = async (req, res, next) => {
