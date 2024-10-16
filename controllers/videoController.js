@@ -146,29 +146,53 @@ exports.uploadVideo = async (req, res, next) => {
   } catch (error) {
     console.error("Error uploading media:", error);
 
-    // Delete local file if any error occurs
-    if (req.file && fs.existsSync(uploadPath)) {
-      fs.unlinkSync(uploadPath);
-    }
+    // // Delete local file if any error occurs
+    // if (req.file && fs.existsSync(uploadPath)) {
+    //   fs.unlinkSync(uploadPath);
+    // }
 
     next(error); // Pass the error to the global error handler
   }
 };
 
 // Get all videos sorted by date (All users)
+// Get all videos sorted by date with pagination (All users)
 exports.getAllVideos = async (req, res, next) => {
   try {
+    // Get limit and page from query parameters, with default values
+    const limit = parseInt(req.query.limit) || 1; // Show one video by default
+    const page = parseInt(req.query.page) || 1;   // Start from the first page by default
+
+    // Calculate the skip value for pagination
+    const skip = (page - 1) * limit;
+
     const videos = await Video.find()
       .populate({
         path: "seller",
         select: "name imageUrl", // Use space to separate the fields
       })
-      .sort({ createdAt: -1 }); // Sort by date (newest first)
-    res.status(200).json({ success: true, videos });
+      .sort({ createdAt: -1 }) // Sort by date (newest first)
+      .skip(skip)              // Skip the previous pages
+      .limit(limit);           // Limit the results to the specified number
+
+    // Count total number of videos for pagination info
+    const totalVideos = await Video.countDocuments();
+
+    res.status(200).json({
+      success: true,
+      videos,
+      pagination: {
+        totalVideos,          // Total number of videos
+        currentPage: page,    // Current page
+        totalPages: Math.ceil(totalVideos / limit), // Total pages
+        hasNextPage: (page * limit) < totalVideos,   // Check if there is a next page
+      },
+    });
   } catch (error) {
     next(error);
   }
 };
+
 
 exports.likeVideo = async (req, res, next) => {
   try {

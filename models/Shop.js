@@ -25,6 +25,6 @@ const shopSchema = new mongoose.Schema({
 });
 
 // Create a text index for the description fields (for both description_e and description_b)
-shopSchema.index({ description_e: "text", description_b: "text" });
+shopSchema.index({shopName: 'text', description_e: "text", description_b: "text" });
 
 module.exports = mongoose.model("Shop", shopSchema);

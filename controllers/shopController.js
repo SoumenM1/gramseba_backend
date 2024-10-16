@@ -219,7 +219,7 @@ exports.getShopsNearby = async (req, res, next) => {
 // Search for shops within a 10km radius and matching description
 exports.searchShops = async (req, res, next) => {
   try {
-    const { description, longitude, latitude } = req.query;
+    const { query, longitude, latitude } = req.query;
 
     if (!longitude || !latitude) {
       return res
@@ -229,10 +229,14 @@ exports.searchShops = async (req, res, next) => {
 
     // Convert the radius to meters (10km = 10000 meters)
     const radius = 10000;
-
+    const regex = new RegExp(query, 'i');
     // Geospatial query and text search combined
     const shops = await Shop.find({
-      $text: { $search: description },
+      $or: [
+        { shopName: regex },        // Search in shop name
+        { description_b: regex }, // Search in shop description
+        {description_e: regex }
+      ],
       location: {
         $geoWithin: {
           $centerSphere: [[longitude, latitude], radius / 6378.1], // Earth radius in kilometers
