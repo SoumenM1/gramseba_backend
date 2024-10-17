@@ -160,7 +160,7 @@ exports.uploadVideo = async (req, res, next) => {
 exports.getAllVideos = async (req, res, next) => {
   try {
     // Get limit and page from query parameters, with default values
-    const limit = parseInt(req.query.limit) || 1; // Show one video by default
+    const limit = parseInt(req.query.limit) || 10; // Show one video by default
     const page = parseInt(req.query.page) || 1;   // Start from the first page by default
 
     // Calculate the skip value for pagination
