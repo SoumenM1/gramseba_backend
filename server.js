@@ -23,11 +23,13 @@ const io = socketUtil.init(server);
 //   message: 'Too many requests from this IP, please try again after 15 minutes',
 // }));
 app.use(express.json());
-app.use(cors({
+app.use(cors(
+  {
   origin: ['https://grambazer.gramsaba.in','http://localhost:3000'], // Allow only your frontend
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true, // Include credentials if needed
-}));
+}
+));
 
 
 // Setup routes
@@ -51,7 +53,7 @@ io.on('connection', (socket) => {
   console.log('New WebSocket connection');
 
   // Notify all users when a new video is uploaded
-  socket.on('newVideo', (data) => {
+  socket.on('newMedia', (data) => {
     io.emit('notifyVideo', data);
   });
 
