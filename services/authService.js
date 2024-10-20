@@ -31,10 +31,10 @@ exports.login = async ({ email, password }) => {
     throw error;
   }
 
-  const token = generateToken(user._id, user.role, user.kycVerified, user.imageUrl);
+  const token = generateToken(user._id,user.name, user.role, user.kycVerified, user.imageUrl);
   return token;
 };
 
-const generateToken = (userId, role,kycVerified, imageUrl) => {
-  return jwt.sign({ userId, role,kycVerified,imageUrl }, process.env.JWT_SECRET, { expiresIn: '1h' });
+const generateToken = (userId, name, role, kycVerified, imageUrl) => {
+  return jwt.sign({ userId, name, role,kycVerified,imageUrl }, process.env.JWT_SECRET, { expiresIn: '1h' });
 };
