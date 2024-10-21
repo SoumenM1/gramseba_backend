@@ -1,5 +1,5 @@
 const express = require('express');
-const { register, login, sendOTP, verifyOTPAndRegister, updateProfile, getProfile, updateKYC } = require('../controllers/authController');
+const { register, login, sendOTP, verifyOTPAndRegister, forgetPassword, updateKYC } = require('../controllers/authController');
 const { protect } = require('../middlewares/authMiddleware');
 const {upload }= require('../middlewares/uploadMiddleware')
 const router = express.Router();
@@ -15,11 +15,14 @@ router.post('/send-otp', sendOTP);
 // Verify OTP and Register User API
 router.post('/verify-otp-register', verifyOTPAndRegister);
 
+//forget-password
+router.post('/reset-password',forgetPassword)
+
 // Update User Profile
 // router.put('/update-profile', protect, updateProfile);
 
 // Get User Profile
-router.get('/profile', protect, getProfile);
+// router.get('/profile', protect, getProfile);
 
 // Route to update KYC details
 // router.put('/update-kyc',protect, upload.fields([

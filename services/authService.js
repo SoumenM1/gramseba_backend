@@ -45,6 +45,6 @@ const generateToken = (userId, name, role, kycVerified, imageUrl) => {
   return jwt.sign(
     { userId, name, role, kycVerified, imageUrl },
     process.env.JWT_SECRET,
-    { expiresIn: "1h" }
+    { expiresIn: "90d" }
   );
 };
