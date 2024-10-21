@@ -1,3 +1,4 @@
+const { IosApp } = require("firebase-admin/project-management");
 const Video = require("../models/Video");
 const socketUtil = require("../utils/socket"); // Import socket utility
 // const videoIntelligence = require('@google-cloud/video-intelligence');
@@ -128,10 +129,14 @@ exports.uploadVideo = async (req, res, next) => {
 
     // Notify all users about the new media using Socket.IO
     const io = socketUtil.getIO();
+    io.on("setup", (userData) => {
+      socket.join(userData.userId);
+      socket.emit("connected");
+    });
     io.emit("newMedia", {
       title: media.title,
-      mediaUrl: mediaUrl,
-      isVideo: media.isvideo,
+      videoUrl: isVideo ? mediaUrl : undefined,
+      imageUrl: !isVideo ? mediaUrl : undefined,
     });
 
     // Delete the local file after uploading to Cloudinary

@@ -31,7 +31,6 @@ app.use(cors(
 }
 ));
 
-
 // Setup routes
 app.get('/',(req,res)=>{
     res.send('This is grambazer server');
@@ -50,17 +49,11 @@ app.use('/api/items', itemRoutes);
 app.use(errorHandler);
 // Socket.io connection
 io.on('connection', (socket) => {
-  console.log('New WebSocket connection');
-
-  // Notify all users when a new video is uploaded
-  socket.on('newMedia', (data) => {
-    io.emit('notifyVideo', data);
-  });
-
-  // Notify users within 10km when a new offer is created
-  socket.on('newOffer', (data) => {
-    io.emit('notifyOffer', data);
-  });
+  console.log("Connected to socket.io");
+    socket.on("setup", (userData) => {
+      socket.join(userData.userId);
+      socket.emit("connected");
+    });
 
   socket.on('disconnect', () => {
     console.log('WebSocket disconnected');
