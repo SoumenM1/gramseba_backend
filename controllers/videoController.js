@@ -314,8 +314,9 @@ exports.updateVideo = async (req, res, next) => {
 // Delete video by ID
 exports.deleteVideo = async (req, res, next) => {
   const { id } = req.params;
-
+  if(!id) return res.status(401).json({message:"params missing"})
   try {
+    // Find the video in the database, ensuring it belongs to the logged-in seller
     const video = await Video.findOne({ _id: id, seller: req.user._id });
     if (!video) {
       return res
@@ -324,15 +325,23 @@ exports.deleteVideo = async (req, res, next) => {
     }
 
     // Delete video from Cloudinary (assuming videoUrl is stored in Cloudinary)
-    const publicId = video.videoUrl.split("/").pop().split(".")[0]; // Extract public ID from URL
-    await cloudinary.uploader.destroy(publicId, { resource_type: "video" });
+    if (video.videoUrl) {
+      const videoPublicId = video.videoUrl.split("/").pop().split(".")[0]; // Extract public ID from video URL
+      await cloudinary.uploader.destroy(videoPublicId, { resource_type: "video" });
+    }
 
-    // Delete video from MongoDB
+    // Delete photo (thumbnail or cover image) from Cloudinary (assuming photoUrl is stored in Cloudinary)
+    if (video.imageUrl) {
+      const photoPublicId = video.imageUrl.split("/").pop().split(".")[0]; // Extract public ID from photo URL
+      await cloudinary.uploader.destroy(photoPublicId, { resource_type: "image" });
+    }
+
+    // Delete video document from MongoDB
     await Video.findByIdAndDelete(id);
 
     res.status(200).json({
       success: true,
-      message: "Video deleted successfully",
+      message: "Video and associated photo deleted successfully",
     });
   } catch (error) {
     next(error);
