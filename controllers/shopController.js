@@ -158,11 +158,11 @@ exports.getShopsNearby = async (req, res, next) => {
     const skip = (page - 1) * limit;
     // Find shops within a 10km radius
     const shops = await Shop.find({
-      location: {
-        $geoWithin: {
-          $centerSphere: [[longitude, latitude], 10 / 6378.1], // 10 km in radians
-        },
-      },
+      // location: {
+      //   $geoWithin: {
+      //     $centerSphere: [[longitude, latitude], 10 / 6378.1], // 10 km in radians
+      //   },
+      // },
     })
       .populate("seller")
       .skip(skip) // Skip previous pages
