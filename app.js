@@ -23,13 +23,12 @@ const io = socketUtil.init(server);
 //   message: 'Too many requests from this IP, please try again after 15 minutes',
 // }));
 app.use(express.json());
-app.use(cors(
-  {
-  origin: ['https://grambazer.gramsaba.in','http://localhost:3000'], // Allow only your frontend
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true, // Include credentials if needed
-}
-));
+
+  app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}))
 
 // Setup routes
 app.get('/',(req,res)=>{

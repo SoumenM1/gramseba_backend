@@ -1,44 +1,37 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
 
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, unique: true, sparse: true },
-  email_verify:{type: Boolean, require: false, default:false},
-  phone: { type: String, unique: true, sparse: true },
+  otp: {
+    type: String,
+  },
+  otpExpires: {
+    type: Date,
+  },
+  isVerified: {
+    type: Boolean,
+    default: false,
+  },
   password: { type: String, required: true },
-  role: { type: String, enum: ['user', 'seller'], required: true },
-
-  // User/Seller details - mandatory for sellers
-  state: { type: String, required: false },       // Mandatory for sellers
-  district: { type: String, required: false },    // Mandatory for sellers
-  pincode: { type: String, required: false },     // Mandatory for sellers
-  village: { type: String, required: false}, // Mandatory for sellers
-
-  // KYC for sellers
-  kycVerified: { type: String, enum: ['pending', 'in_progress', 'verified'], default: 'pending' }, // To mark KYC status
-  aadhaarFrontUrl: { type: String, required: false ,default:undefined},
-  aadhaarBackUrl: { type: String, required: false ,default:undefined}, // URL to uploaded Aadhaar image
-
   // Profile Image
-  imageUrl: { type: String, required: false,default:undefined },     // URL of the profile image
-
+  imageUrl: { type: String, required: false, default: undefined },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
 
 // Update updatedAt before saving
-userSchema.pre('save', function(next) {
+userSchema.pre("save", function (next) {
   this.updatedAt = Date.now();
   next();
 });
 
 // Hash password before saving user
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
   this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
-module.exports = mongoose.model('User', userSchema);
-
+module.exports = mongoose.model("User", userSchema);

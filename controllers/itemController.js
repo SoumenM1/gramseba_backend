@@ -13,45 +13,46 @@ const isSellerOfShop = async (shopId, userId) => {
 // Create a new item
 exports.createItem = async (req, res, next) => {
   try {
-    const { shopId, title, description, price } = req.body;
-    const itemImage = req.file; // Multer's single file
-    if (!shopId || !title || !description || !price || !itemImage) {
-      // Remove the uploaded file if validation fails
-      if (itemImage && fs.existsSync(itemImage.path)) {
-        fs.unlinkSync(itemImage.path);
-      }
-      return res.status(400).json({ success: false, message: 'All fields are required.' });
-    }
-    const isSeller = await isSellerOfShop(shopId, req.user._id);
-    if (!isSeller) {
-      // Remove the uploaded file if user is not the seller
-      if (itemImage && fs.existsSync(itemImage.path)) {
-        fs.unlinkSync(itemImage.path);
-      }
-      return res.status(403).json({ success: false, message: 'You are not authorized to add items to this shop.' });
-    }
-    // Upload the image to Cloudinary
-    const uploadResult = await cloudinary.uploader.upload(itemImage.path, {
-      folder: 'gram_bazer/items',
-      public_id: `item-${shopId}-${Date.now()}`,
-      resource_type: 'image',
-      transformation: [
-        { width: 800, height: 800, crop: 'limit' }, 
-        { quality: 'auto:good' }, 
-        { fetch_format: 'auto' }
-      ]
-    });
-    const imageUrl = uploadResult.secure_url;
-    // Remove the local image file after uploading
-    fs.unlinkSync(itemImage.path);
+    const { shopId, title, description, price, phone } = req.body;
+    // const itemImage = req.file; // Multer's single file
+    // if (!shopId || !title || !description || !price || !itemImage) {
+    //   // Remove the uploaded file if validation fails
+    //   if (itemImage && fs.existsSync(itemImage.path)) {
+    //     fs.unlinkSync(itemImage.path);
+    //   }
+    //   return res.status(400).json({ success: false, message: 'All fields are required.' });
+    // }
+    // const isSeller = await isSellerOfShop(shopId, req.user._id);
+    // if (!isSeller) {
+    //   // Remove the uploaded file if user is not the seller
+    //   if (itemImage && fs.existsSync(itemImage.path)) {
+    //     fs.unlinkSync(itemImage.path);
+    //   }
+    //   return res.status(403).json({ success: false, message: 'You are not authorized to add items to this shop.' });
+    // }
+    // // Upload the image to Cloudinary
+    // const uploadResult = await cloudinary.uploader.upload(itemImage.path, {
+    //   folder: 'gram_bazer/items',
+    //   public_id: `item-${shopId}-${Date.now()}`,
+    //   resource_type: 'image',
+    //   transformation: [
+    //     { width: 800, height: 800, crop: 'limit' }, 
+    //     { quality: 'auto:good' }, 
+    //     { fetch_format: 'auto' }
+    //   ]
+    // });
+    // const imageUrl = uploadResult.secure_url;
+    // // Remove the local image file after uploading
+    // fs.unlinkSync(itemImage.path);
 
     // Create the new item
     const item = new Item({
       title,
-      description,
-      price,
-      imageUrl,
-      shop: shopId,
+      // description,
+      // price,
+      // imageUrl,
+      // shop: shopId,
+      phone: phone
     });
 
     await item.save();
@@ -64,13 +65,13 @@ exports.createItem = async (req, res, next) => {
   } catch (error) {
     console.error('Error creating item:', error);
     // Remove the uploaded file in case of any error
-    if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
-    next(error);
+  //   if (req.file && fs.existsSync(req.file.path)) {
+  //     fs.unlinkSync(req.file.path);
+  //   }
+  //   next(error);
   }
 };
-// Update an existing item (title, description, price, image)
+
 exports.updateItem = async (req, res, next) => {
   try {
     const { id } = req.params; // Item ID from URL

@@ -23,7 +23,7 @@ const sendEmail = async (email, name, otp, forget ) => {
           ${otp}
         </div>
         <p>If you didn't request this, please ignore this email or contact our support team.</p>
-        <p>Best regards,<br/>The Grambazer || Gramsaba Team</p>
+        <p>Best regards,<br/>The Grambazer || Gramseba Team</p>
       </div>
     `;
   } else {
@@ -39,7 +39,7 @@ const sendEmail = async (email, name, otp, forget ) => {
           ${otp}
         </div>
         <p>If you didn’t request this, please ignore this email or contact our support team.</p>
-        <p>Best regards,<br/>The Grambazer || Gramsaba Team</p>
+        <p>Best regards,<br/>The Grambazer || Gramseba Team</p>
       </div>
     `;
   }

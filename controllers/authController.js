@@ -123,7 +123,7 @@ exports.register = async (req, res, next) => {
 exports.login = async (req, res, next) => {
   try {
     const token = await authService.login(req.body);
-    res.status(200).json({ token });
+    res.status(200).json(token);
   } catch (error) {
     next(error);
   }
@@ -182,38 +182,25 @@ exports.sendOTP = async (req, res) => {
   }
 };
 
-exports.verifyOTPAndRegister = async (req, res) => {
-  const { email, otp, name, password, role } = req.body; // role: 'user' or 'seller'
-  // Check if OTP exists for the email
-  const storedOTPData = otpStorage.get(email);
-  if (!storedOTPData) {
-    return res.status(400).json({ message: 'OTP expired or invalid.' });
-  }
+exports.verifyOtp = async ({ email, otp }) => {
+  const user = await User.findOne({ email });
 
-  // Check if OTP matches
-  const { otp: storedOTP, createdAt } = storedOTPData;
-  if (otp !== storedOTP) {
-    return res.status(400).json({ message: 'Invalid OTP.' });
-  }
+  if (!user) throw new Error("User not found");
 
-  // Check if OTP is older than 10 minutes
-  const expirationTime = 10 * 60 * 1000; // 10 minutes in milliseconds
-  if (Date.now() - createdAt > expirationTime) {
-    otpStorage.delete(email); // Delete expired OTP
-    return res.status(400).json({ message: 'OTP expired.' });
-  }
+  if (user.otp !== otp) throw new Error("Invalid OTP");
 
-  // OTP is valid, proceed with registration
-  const newUser = new User({ email, name, password, role , email_verify:true });
+  if (user.otpExpires < Date.now())
+    throw new Error("OTP expired");
 
-  try {
-    await newUser.save(); // Save user to the database
-    otpStorage.delete(email); // Delete OTP after successful registration
-    return res.status(201).json({ message: 'User registered successfully.' });
-  } catch (error) {
-    return res.status(500).json({ message: 'Failed to register user.' });
-  }
+  user.isVerified = true;
+  user.otp = undefined;
+  user.otpExpires = undefined;
+
+  await user.save();
+
+  return { message: "Email verified successfully" };
 };
+
 
 exports.forgetPassword = async (req, res) => {
   const { email, otp, newPassword } = req.body;
