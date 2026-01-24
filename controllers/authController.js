@@ -77,6 +77,7 @@ exports.resendOTP = async (req, res) => {
 };
 
 exports.verifyOTP = async (req, res) => {
+  try {
   const { email, otp } = req.body;
   const user = await User.findOne({ email });
 
@@ -104,7 +105,11 @@ exports.verifyOTP = async (req, res) => {
   user.otpExpires = undefined;
   await user.save();
 
-  return res.status(200).json({ message: "Email verified successfully." });
+  return res.status(200).json({ message: "Email verified successfully." });  
+  } catch (error) {
+   return res.status(500).json({ message: "OTP verification failed." }); 
+  }
+  
 };
 
 exports.forgetPassword = async (req, res) => {
@@ -149,65 +154,70 @@ exports.forgetPassword = async (req, res) => {
 };
 
 exports.register = async (req, res) => {
-  const { name, email, password } = req.body;
-  if (!name || !email || !password) {
-    return res.status(400).json({ message: "All fields are required." });
-  }
-  // Check existing user
-  const existingUser = await User.findOne({ email });
-  if (existingUser)
-    return res.status(400).json({ message: "User already exists." });
-  // 🔐 Generate 6-digit OTP
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  try {
+    const { name, email, password } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+    // Check existing user
+    const existingUser = await User.findOne({ email });
+    if (existingUser)
+      return res.status(400).json({ message: "User already exists." });
+    // 🔐 Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-  // ⏳ OTP expiry (10 minutes)
-  const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+    // ⏳ OTP expiry (10 minutes)
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
 
-  // Create user
-  const user = new User({
-    name,
-    email,
-    password,
-    otp,
-    otpExpires,
-    isVerified: false,
-  });
+    // Create user
+    const user = new User({
+      name,
+      email,
+      password,
+      otp,
+      otpExpires,
+      isVerified: false,
+    });
 
-  await user.save();
+    await user.save();
 
-  // 📧 Send OTP email (your existing function)
-  await sendEmail(email, name, otp);
+    // 📧 Send OTP email (your existing function)
+    await sendEmail(email, name, otp);
 
-  // ✅ Do NOT send token yet
-  return res
-    .status(201)
-    .json({
+    // ✅ Do NOT send token yet
+    return res.status(201).json({
       message: "User registered. Please verify your email with the OTP sent.",
     });
+  } catch (error) {
+    return res.status(500).json({ message: "Registration failed." });
+  }
 };
 
-exports.login = async (req,res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ message: "All fields are required." });
+exports.login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found." });
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch)
+      return res.status(400).json({ message: "Invalid credentials." });
+
+    if (!user.isVerified) {
+      return res
+        .status(401)
+        .json({ message: "Email not verified. Please verify your email." });
+    }
+
+    const token = generateToken(user._id, user.name);
+    return res.status(200).json({ token, user });
+  } catch (error) {
+    return res.status(500).json({ message: "Login failed." });
   }
-  const user = await User.findOne({ email });
-  if (!user) return res.status(404).json({ message: "User not found." });
-
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch)
-    return res.status(400).json({ message: "Invalid credentials." });
-
-  if (!user.isVerified) {
-    return res
-      .status(401)
-      .json({ message: "Email not verified. Please verify your email." });
-  }
-
-  const token = generateToken(user._id, user.name);
-  return res.status(200).json({ token, user });
 };
-
 
 const generateToken = (userId, name, imageUrl) => {
   return jwt.sign({ userId, name, imageUrl }, process.env.JWT_SECRET, {
