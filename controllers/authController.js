@@ -17,8 +17,8 @@ exports.sendOTP = async (req, res) => {
     return res.status(404).json({ message: "User not found." });
   }
 
-  // 🔐 Generate 6-digit OTP
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  // 🔐 Generate 4-digit OTP
+  const otp = Math.floor(1000 + Math.random() * 9000).toString();
 
   // ⏳ OTP expiry (10 minutes)
   const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
@@ -55,7 +55,7 @@ exports.resendOTP = async (req, res) => {
   }
 
   // 🔐 Generate new OTP
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const otp = Math.floor(1000 + Math.random() * 9000).toString();
 
   // ⏳ New expiry (10 minutes)
   const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
@@ -78,42 +78,43 @@ exports.resendOTP = async (req, res) => {
 
 exports.verifyOTP = async (req, res) => {
   try {
-  const { email, otp } = req.body;
-  if (!email || !otp) {
-    return res.status(400).json({ message: "Email and OTP are required." });
-  }
-  const user = await User.findOne({ email });
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ message: "Email and OTP are required." });
+    }
+    const user = await User.findOne({ email });
 
-  if (!user) {
-    return res.status(404).json({ message: "User not found." });
-  }
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
 
-  if (!user.otp || !user.otpExpires) {
-    return res
-      .status(400)
-      .json({ message: "No OTP found. Please request again." });
-  }
+    if (!user.otp || !user.otpExpires) {
+      return res
+        .status(400)
+        .json({ message: "No OTP found. Please request again." });
+    }
 
-  if (user.otpExpires < Date.now()) {
-    return res.status(400).json({ message: "OTP expired. Please resend OTP." });
-  }
+    if (user.otpExpires < Date.now()) {
+      return res
+        .status(400)
+        .json({ message: "OTP expired. Please resend OTP." });
+    }
 
-  if (user.otp !== otp) {
-    return res.status(400).json({ message: "Invalid OTP." });
-  }
+    if (user.otp !== otp) {
+      return res.status(400).json({ message: "Invalid OTP." });
+    }
 
-  // ✅ Mark verified
-  user.isVerified = true;
-  user.otp = undefined;
-  user.otpExpires = undefined;
-  await user.save();
+    // ✅ Mark verified
+    user.isVerified = true;
+    user.otp = undefined;
+    user.otpExpires = undefined;
+    await user.save();
 
-  return res.status(200).json({ message: "Email verified successfully." });  
+    return res.status(200).json({ message: "Email verified successfully." });
   } catch (error) {
     console.error(error);
-   return res.status(500).json({ message: "OTP verification failed." }); 
+    return res.status(500).json({ message: "OTP verification failed." });
   }
-  
 };
 
 exports.forgetPassword = async (req, res) => {
@@ -167,8 +168,8 @@ exports.register = async (req, res) => {
     const existingUser = await User.findOne({ email });
     if (existingUser)
       return res.status(400).json({ message: "User already exists." });
-    // 🔐 Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    // 🔐 Generate 4-digit OTP
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
 
     // ⏳ OTP expiry (10 minutes)
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
@@ -183,11 +184,9 @@ exports.register = async (req, res) => {
       isVerified: false,
     });
 
-    await user.save();
-
     // 📧 Send OTP email (your existing function)
     await sendEmail(email, name, otp);
-
+    await user.save();
     // ✅ Do NOT send token yet
     return res.status(201).json({
       message: "User registered. Please verify your email with the OTP sent.",

@@ -37,6 +37,9 @@ const videoRoutes = require('./routes/videoRoutes');
 const offerRoutes = require('./routes/offerRoutes');
 const itemRoutes = require('./routes/itemRoutes')
 app.use('/api/auth', authRoutes);
+app.use("/api/categories", require("./routes/categoryRoutes"));
+app.use("/api/subcategories", require("./routes/subCategoryRoutes"));
+
 app.use('/api/shops', shopRoutes);
 app.use('/api/videos', videoRoutes);
 app.use('/api/offers', offerRoutes);
