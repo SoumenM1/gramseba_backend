@@ -79,6 +79,9 @@ exports.resendOTP = async (req, res) => {
 exports.verifyOTP = async (req, res) => {
   try {
   const { email, otp } = req.body;
+  if (!email || !otp) {
+    return res.status(400).json({ message: "Email and OTP are required." });
+  }
   const user = await User.findOne({ email });
 
   if (!user) {
@@ -107,6 +110,7 @@ exports.verifyOTP = async (req, res) => {
 
   return res.status(200).json({ message: "Email verified successfully." });  
   } catch (error) {
+    console.error(error);
    return res.status(500).json({ message: "OTP verification failed." }); 
   }
   

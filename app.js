@@ -1,11 +1,8 @@
 const express = require('express');
 const cors = require('cors')
 const http = require('http');
-// const morgan = require('morgan');
-// const rateLimit = require('express-rate-limit');
 const socketUtil = require('./utils/socket'); 
 const dotenv = require('dotenv');
-const { errorHandler } = require('./middlewares/errorHandler');
 const connectDB = require('./config/db');
 
 dotenv.config();
@@ -45,7 +42,6 @@ app.use('/api/videos', videoRoutes);
 app.use('/api/offers', offerRoutes);
 app.use('/api/items', itemRoutes);
 
-app.use(errorHandler);
 // Socket.io connection
 io.on('connection', (socket) => {
   console.log("Connected to socket.io");
