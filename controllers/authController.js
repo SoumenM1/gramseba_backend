@@ -1,206 +1,111 @@
-const crypto = require('crypto');
-const User = require('../models/User');
-const authService = require('../services/authService');
-const sendEmail = require('../utils/sendEmail'); 
-const otpStorage = new Map(); 
-const cloudinary = require('../config/cloudinaryConfig').cloudinary;
-const fs = require('fs');
-
-exports.updateKYC = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: 'User ID is missing from the request.',
-      });
-    }
-    const { state, district, pincode, village, phone } = req.body;
-    if (!state || !district || !pincode || !village || !phone) {
-      return res.status(400).json({
-        success: false,
-        message: 'All fields (state, district, pincode, village, and phone) are required.',
-      });
-    }
-    if (!/^\d{6}$/.test(pincode)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid pincode. It should be a 6-digit number.',
-      });
-    }
-    let aadhaarFrontUrl = '', aadhaarBackUrl = '', imageUrl = '';
-    if (req.files?.aadhaarFront) {
-      const result = await cloudinary.uploader.upload(req.files.aadhaarFront[0].path, {
-        folder: 'gram_bazer/kyc',
-        public_id: `aadhaar-front-${userId}-${Date.now()}`,
-        resource_type: 'image',
-        transformation: [
-          { width: 800, height: 800, crop: 'limit' }, 
-          { quality: 'auto:good' },
-          { fetch_format: 'auto' } 
-        ],
-      });
-      aadhaarFrontUrl = result.secure_url;
-      fs.unlinkSync(req.files.aadhaarFront[0].path);
-    }
-    if (req.files?.aadhaarBack) {
-      const result = await cloudinary.uploader.upload(req.files.aadhaarBack[0].path, {
-        folder: 'gram_bazer/kyc',
-        public_id: `aadhaar-back-${userId}-${Date.now()}`,
-        resource_type: 'image',
-        transformation: [
-          { width: 800, height: 800, crop: 'limit' }, 
-          { quality: 'auto:good' },
-          { fetch_format: 'auto' }
-        ]
-      });
-      aadhaarBackUrl = result.secure_url;
-      fs.unlinkSync(req.files.aadhaarBack[0].path);
-    }
-    if (req.files?.userImage) {
-      const result = await cloudinary.uploader.upload(req.files.userImage[0].path, {
-        folder: 'gram_bazer/kyc',
-        public_id: `user-${userId}-${Date.now()}`,
-        resource_type: 'image',
-        transformation: [
-          { width: 800, height: 800, crop: 'limit' }, 
-          { quality: 'auto:good' }, 
-          { fetch_format: 'auto' }
-        ]
-      });
-      imageUrl = result.secure_url;
-      fs.unlinkSync(req.files.userImage[0].path);
-    }
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      {
-        $set: {
-          state,
-          district,
-          pincode,
-          village,
-          phone,
-          aadhaarFrontUrl: aadhaarFrontUrl || undefined,
-          aadhaarBackUrl: aadhaarBackUrl || undefined,
-          kycVerified: 'in_progress',
-          imageUrl: imageUrl || undefined,
-        },
-        updatedAt: Date.now(),
-      },
-      { new: true }
-    );
-
-    if (!updatedUser) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found',
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: 'KYC details updated successfully',
-      data: updatedUser,
-    });
-  } catch (error) {
-    console.error('Error updating KYC:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Server Error',
-    });
-  }
-};
-
-exports.register = async (req, res, next) => {
-  try {
-    const user = await authService.register(req.body);
-    res.status(201).json(user);
-  } catch (error) {
-    next(error);
-  }
-};
-
-exports.login = async (req, res, next) => {
-  try {
-    const token = await authService.login(req.body);
-    res.status(200).json(token);
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Get User Profile
-exports.getProfile = async (req, res, next) => {
-  try {
-    const user = await User.findById(req.user.id).select('-password'); // Exclude password
-
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found.' });
-    }
-
-    res.status(200).json({
-      success: true,
-      user,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+const crypto = require("crypto");
+const User = require("../models/User");
+const sendEmail = require("../utils/sendEmail");
+const cloudinary = require("../config/cloudinaryConfig").cloudinary;
+const fs = require("fs");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 
 // Generate and send OTP
 exports.sendOTP = async (req, res) => {
-  const { email,name,forget} = req.body;
- 
+  const { email } = req.body;
+
   // Check if user exists
   const user = await User.findOne({ email });
 
-  // If not forgetting password, check if user already exists
-  if (!forget) {
-    if (user) {
-      return res.status(400).json({ message: 'Email already registered.' });
-    }
-  } else {
-    // If forgetting password, check if user exists
-    if (!user) {
-      return res.status(404).json({ message: 'User not found.' });
-    }
+  if (!user) {
+    return res.status(404).json({ message: "User not found." });
   }
- 
-  // Generate 6-digit OTP
-  const otp = crypto.randomInt(100000, 999999).toString();
-  
-  // Store OTP with a TTL (Time To Live) of 10 minutes (600000 ms)
-  otpStorage.set(email, { otp, createdAt: Date.now() });
+
+  // 🔐 Generate 6-digit OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  // ⏳ OTP expiry (10 minutes)
+  const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
 
   try {
     // Send OTP via email (customize your sendEmail utility)
-    await sendEmail(email, user ? user.name : name, otp, forget );
-    
-    return res.status(200).json({ message: 'OTP sent to your email.' });
+    await sendEmail(email, user.name, otp);
+
+    return res.status(200).json({ message: "OTP sent to your email." });
   } catch (error) {
-    return res.status(500).json({ message: 'Failed to send OTP.' });
+    return res.status(500).json({ message: "Failed to send OTP." });
   }
 };
 
-exports.verifyOtp = async ({ email, otp }) => {
+// Resend OTP for email verification
+exports.resendOTP = async (req, res) => {
+  const { email } = req.body;
+
   const user = await User.findOne({ email });
 
-  if (!user) throw new Error("User not found");
+  if (!user) {
+    return res.status(404).json({ message: "User not found." });
+  }
 
-  if (user.otp !== otp) throw new Error("Invalid OTP");
+  if (user.isVerified) {
+    return res.status(400).json({ message: "Email already verified." });
+  }
 
-  if (user.otpExpires < Date.now())
-    throw new Error("OTP expired");
+  // ⛔ Optional: prevent spamming (cooldown logic)
+  if (user.otpExpires && user.otpExpires > Date.now()) {
+    return res.status(429).json({
+      message: "OTP already sent. Please wait before requesting again.",
+    });
+  }
 
+  // 🔐 Generate new OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  // ⏳ New expiry (10 minutes)
+  const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+  try {
+    // Update OTP in DB
+    user.otp = otp;
+    user.otpExpires = otpExpires;
+    await user.save();
+
+    // Send email
+    await sendEmail(email, user.name, otp);
+
+    return res.status(200).json({ message: "OTP resent successfully." });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Failed to resend OTP." });
+  }
+};
+
+exports.verifyOTP = async (req, res) => {
+  const { email, otp } = req.body;
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    return res.status(404).json({ message: "User not found." });
+  }
+
+  if (!user.otp || !user.otpExpires) {
+    return res
+      .status(400)
+      .json({ message: "No OTP found. Please request again." });
+  }
+
+  if (user.otpExpires < Date.now()) {
+    return res.status(400).json({ message: "OTP expired. Please resend OTP." });
+  }
+
+  if (user.otp !== otp) {
+    return res.status(400).json({ message: "Invalid OTP." });
+  }
+
+  // ✅ Mark verified
   user.isVerified = true;
   user.otp = undefined;
   user.otpExpires = undefined;
-
   await user.save();
 
-  return { message: "Email verified successfully" };
+  return res.status(200).json({ message: "Email verified successfully." });
 };
-
 
 exports.forgetPassword = async (req, res) => {
   const { email, otp, newPassword } = req.body;
@@ -208,20 +113,20 @@ exports.forgetPassword = async (req, res) => {
   // Check if OTP exists for the email
   const storedOTPData = otpStorage.get(email);
   if (!storedOTPData) {
-    return res.status(400).json({ message: 'OTP expired or invalid.' });
+    return res.status(400).json({ message: "OTP expired or invalid." });
   }
 
   // Check if OTP matches
   const { otp: storedOTP, createdAt } = storedOTPData;
   if (otp !== storedOTP) {
-    return res.status(400).json({ message: 'Invalid OTP.' });
+    return res.status(400).json({ message: "Invalid OTP." });
   }
 
   // Check if OTP is older than 10 minutes
   const expirationTime = 10 * 60 * 1000; // 10 minutes in milliseconds
   if (Date.now() - createdAt > expirationTime) {
     otpStorage.delete(email); // Delete expired OTP
-    return res.status(400).json({ message: 'OTP expired.' });
+    return res.status(400).json({ message: "OTP expired." });
   }
 
   // OTP is valid, proceed to reset password
@@ -229,7 +134,7 @@ exports.forgetPassword = async (req, res) => {
     // Find user by email
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ message: 'User not found.' });
+      return res.status(404).json({ message: "User not found." });
     }
 
     // Update user password
@@ -237,8 +142,75 @@ exports.forgetPassword = async (req, res) => {
     await user.save(); // Save updated user to the database
 
     otpStorage.delete(email); // Delete OTP after successful password reset
-    return res.status(200).json({ message: 'Password reset successfully.' });
+    return res.status(200).json({ message: "Password reset successfully." });
   } catch (error) {
-    return res.status(500).json({ message: 'Failed to reset password.' });
+    return res.status(500).json({ message: "Failed to reset password." });
   }
+};
+
+exports.register = async (req, res) => {
+  const { name, email, password } = req.body;
+  if (!name || !email || !password) {
+    return res.status(400).json({ message: "All fields are required." });
+  }
+  // Check existing user
+  const existingUser = await User.findOne({ email });
+  if (existingUser)
+    return res.status(400).json({ message: "User already exists." });
+  // 🔐 Generate 6-digit OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  // ⏳ OTP expiry (10 minutes)
+  const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+  // Create user
+  const user = new User({
+    name,
+    email,
+    password,
+    otp,
+    otpExpires,
+    isVerified: false,
+  });
+
+  await user.save();
+
+  // 📧 Send OTP email (your existing function)
+  await sendEmail(email, name, otp);
+
+  // ✅ Do NOT send token yet
+  return res
+    .status(201)
+    .json({
+      message: "User registered. Please verify your email with the OTP sent.",
+    });
+};
+
+exports.login = async (req,res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ message: "All fields are required." });
+  }
+  const user = await User.findOne({ email });
+  if (!user) return res.status(404).json({ message: "User not found." });
+
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch)
+    return res.status(400).json({ message: "Invalid credentials." });
+
+  if (!user.isVerified) {
+    return res
+      .status(401)
+      .json({ message: "Email not verified. Please verify your email." });
+  }
+
+  const token = generateToken(user._id, user.name);
+  return res.status(200).json({ token, user });
+};
+
+
+const generateToken = (userId, name, imageUrl) => {
+  return jwt.sign({ userId, name, imageUrl }, process.env.JWT_SECRET, {
+    expiresIn: "90d",
+  });
 };
