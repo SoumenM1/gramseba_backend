@@ -1,18 +1,20 @@
-const nodemailer = require('nodemailer');
+const nodemailer = require("nodemailer");
 
-const sendEmail = async (email, name, otp, forget ) => {
+const sendEmail = async (email, name, otp, forget) => {
   const transporter = nodemailer.createTransport({
-    service: 'gmail', // or any other service
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false, // must be false for 587
     auth: {
       user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD
-    }
+      pass: process.env.EMAIL_PASS, // must exist in Render
+    },
   });
 
   let subject, text, html;
 
   if (forget) {
-    subject = 'Grambazer Password Reset Code';
+    subject = "Grambazer Password Reset Code";
     text = `Dear ${name},\n\nYou requested a password reset for your Grambazer account. Please use the code below to reset your password:\n\n${otp}\n\nIf you didn't request this, please ignore this email or contact our support team.\n\nBest regards,\nThe Grambazer Team`;
     html = `
       <div style="padding: 20px; font-family: Arial, sans-serif; color: #333;">
@@ -28,7 +30,7 @@ const sendEmail = async (email, name, otp, forget ) => {
     `;
   } else {
     // Default to registration email
-    subject = 'Grambazer Verification Code';
+    subject = "Grambazer Verification Code";
     text = `Dear ${name},\n\nThank you for registering with Grambazer. To complete your verification, please use the code below:\n\n${otp}\n\nIf you didn’t request this, please ignore this email or contact our support team.\n\nBest regards,\nThe Grambazer Team`;
     html = `
       <div style="padding: 20px; font-family: Arial, sans-serif; color: #333;">
@@ -50,7 +52,7 @@ const sendEmail = async (email, name, otp, forget ) => {
     subject: subject,
     text: text,
     html: html,
-  };  
+  };
 
   await transporter.sendMail(mailOptions);
 };
