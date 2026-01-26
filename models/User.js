@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema(
     otp: String,
     otpExpires: Date,
     isVerified: { type: Boolean, default: false },
+    isOnline: { type: Boolean, default: false },
     imageUrl: { type: String, default: null },
   },
   { timestamps: true }

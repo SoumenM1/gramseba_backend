@@ -10,13 +10,17 @@ const categorySchema = new mongoose.Schema(
     },
 
     icon: {
-      type: String, // font-awesome / image url
+      type: String,
       default: null,
     },
 
     isActive: {
       type: Boolean,
       default: true,
+    },
+    hasSubcategory: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }

@@ -39,24 +39,57 @@ const itemRoutes = require('./routes/itemRoutes')
 app.use('/api/auth', authRoutes);
 app.use("/api/categories", require("./routes/categoryRoutes"));
 app.use("/api/subcategories", require("./routes/subCategoryRoutes"));
+app.use("/api/notifications", require("./utils/sendNotification"));
 
 app.use('/api/shops', shopRoutes);
 app.use('/api/videos', videoRoutes);
 app.use('/api/offers', offerRoutes);
 app.use('/api/items', itemRoutes);
 
-// Socket.io connection
-io.on('connection', (socket) => {
-  console.log("Connected to socket.io");
-    socket.on("setup", (userData) => {
-      socket.join(userData.userId);
-      socket.emit("connected");
-    });
+const jwt = require("jsonwebtoken");
+const User = require("./models/User"); // adjust path
 
-  socket.on('disconnect', () => {
-    console.log('WebSocket disconnected');
+
+io.use((socket, next) => {
+  try {
+    const token = socket.handshake.auth?.token;
+
+    if (!token) {
+      return next(new Error("No token provided"));
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Attach user info to socket
+    socket.userId = decoded.userId || decoded.id;
+
+    next(); // ✅ allow connection
+  } catch (err) {
+    console.log("Socket auth error:", err.message);
+    next(new Error("Authentication failed"));
+  }
+});
+
+io.on("connection", async (socket) => {
+  const userId = socket.userId;
+
+  console.log("Connected to socket.io:", socket.id, "User:", userId);
+
+  // 🟢 Mark online
+  await User.findByIdAndUpdate(userId, {
+    isOnline: true,
+  });
+
+  socket.on("disconnect", async () => {
+    console.log("WebSocket disconnected:", socket.id);
+
+    // 🔴 Mark offline
+    await User.findByIdAndUpdate(userId, {
+      isOnline: false,
+    });
   });
 });
+
 
 // Server listening
 const PORT = process.env.PORT || 5000;
