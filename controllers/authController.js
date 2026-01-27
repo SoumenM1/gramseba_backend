@@ -247,6 +247,13 @@ exports.updateProfile = async (req, res) => {
 
       updateData.imageUrl = result.secure_url;
       updateData.imagePublicId = result.public_id;
+       fs.unlink(req.file.path, (err) => {
+        if (err) {
+          console.error("Failed to delete local file:", err);
+        } else {
+          console.log("Local file deleted:", req.file.path);
+        }
+      });
     }
 
     await User.findByIdAndUpdate(userId, updateData, {
