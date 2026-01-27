@@ -78,42 +78,43 @@ exports.resendOTP = async (req, res) => {
 
 exports.verifyOTP = async (req, res) => {
   try {
-  const { email, otp } = req.body;
-  if (!email || !otp) {
-    return res.status(400).json({ message: "Email and OTP are required." });
-  }
-  const user = await User.findOne({ email });
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ message: "Email and OTP are required." });
+    }
+    const user = await User.findOne({ email });
 
-  if (!user) {
-    return res.status(404).json({ message: "User not found." });
-  }
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
 
-  if (!user.otp || !user.otpExpires) {
-    return res
-      .status(400)
-      .json({ message: "No OTP found. Please request again." });
-  }
+    if (!user.otp || !user.otpExpires) {
+      return res
+        .status(400)
+        .json({ message: "No OTP found. Please request again." });
+    }
 
-  if (user.otpExpires < Date.now()) {
-    return res.status(400).json({ message: "OTP expired. Please resend OTP." });
-  }
+    if (user.otpExpires < Date.now()) {
+      return res
+        .status(400)
+        .json({ message: "OTP expired. Please resend OTP." });
+    }
 
-  if (user.otp !== otp) {
-    return res.status(400).json({ message: "Invalid OTP." });
-  }
+    if (user.otp !== otp) {
+      return res.status(400).json({ message: "Invalid OTP." });
+    }
 
-  // ✅ Mark verified
-  user.isVerified = true;
-  user.otp = undefined;
-  user.otpExpires = undefined;
-  await user.save();
+    // ✅ Mark verified
+    user.isVerified = true;
+    user.otp = undefined;
+    user.otpExpires = undefined;
+    await user.save();
 
-  return res.status(200).json({ message: "Email verified successfully." });  
+    return res.status(200).json({ message: "Email verified successfully." });
   } catch (error) {
     console.error(error);
-   return res.status(500).json({ message: "OTP verification failed." }); 
+    return res.status(500).json({ message: "OTP verification failed." });
   }
-  
 };
 
 exports.forgetPassword = async (req, res) => {
@@ -220,6 +221,60 @@ exports.login = async (req, res) => {
     return res.status(200).json({ token, user });
   } catch (error) {
     return res.status(500).json({ message: "Login failed." });
+  }
+};
+
+// PUT /api/profile
+exports.updateProfile = async (req, res) => {
+  try {
+    const userId = req.user._id; // from auth middleware
+    const { name, bio, dob, gender } = req.body;
+    if (!name || !bio || !dob || !gender) {
+      return res.status(400).json({ message: "fields is required" });
+    }
+    const updateData = { name, bio, dob, gender };
+    const user = await User.findById(userId);
+    // ✅ If user uploads an image
+
+    if (req.file) {
+      if (user.imagePublicId) {
+        await cloudinary.uploader.destroy(user.imagePublicId);
+      }
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: "/gram_bazer/profiles",
+        resource_type: "image",
+      });
+
+      updateData.imageUrl = result.secure_url;
+      updateData.imagePublicId = result.public_id;
+    }
+
+    await User.findByIdAndUpdate(userId, updateData, {
+      new: true,
+    });
+    return res.status(200).json({ message: "Profile updated" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+exports.getProfile = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const user = await User.findById(userId).select(
+      "-password -otp -otpExpires -_id",
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch user profile." });
   }
 };
 

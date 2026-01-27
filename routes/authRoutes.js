@@ -1,12 +1,9 @@
 const express = require('express');
-const { register, login, sendOTP, verifyOTP, forgetPassword, updateKYC } = require('../controllers/authController');
+const { register, login, sendOTP, verifyOTP, forgetPassword, getProfile,updateProfile } = require('../controllers/authController');
 const { protect } = require('../middlewares/authMiddleware');
 const {upload }= require('../middlewares/uploadMiddleware')
 const router = express.Router();
 
-
-// Use this in your route
-// router.put('/update-kyc', protect, upload.fields([{ name: 'aadhaarFront' }, { name: 'aadhaarBack' }, { name: 'userImage' }]), updateKYC);
 
 router.post('/register', register);
 router.post('/login', login);
@@ -20,17 +17,11 @@ router.post('/verify-otp-register', verifyOTP);
 router.post('/reset-password',forgetPassword)
 
 // Update User Profile
-// router.put('/update-profile', protect, updateProfile);
+router.put('/update-profile', protect, upload.single("image"), updateProfile);
 
 // Get User Profile
-// router.get('/profile', protect, getProfile);
+router.get('/profile', protect, getProfile);
 
-// Route to update KYC details
-// router.put('/update-kyc',protect, upload.fields([
-//   { name: 'aadhaarFront', maxCount: 1 },
-//   { name: 'aadhaarBack', maxCount: 1 },
-//   {name:'userImage',maxCount: 1}
-// ]), updateKYC);
 
 module.exports = router;
 
