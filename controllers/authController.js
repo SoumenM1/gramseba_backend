@@ -243,11 +243,16 @@ exports.updateProfile = async (req, res) => {
       const result = await cloudinary.uploader.upload(req.file.path, {
         folder: "/gram_bazer/profiles",
         resource_type: "image",
+        transformation: [
+          { width: 800, height: 800, crop: "limit" },
+          { quality: "auto" }, 
+          { fetch_format: "auto" }, 
+        ],
       });
 
       updateData.imageUrl = result.secure_url;
       updateData.imagePublicId = result.public_id;
-       fs.unlink(req.file.path, (err) => {
+      fs.unlink(req.file.path, (err) => {
         if (err) {
           console.error("Failed to delete local file:", err);
         } else {
