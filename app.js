@@ -33,7 +33,7 @@ app.get('/',(req,res)=>{
 })
 const authRoutes = require('./routes/authRoutes');
 const shopRoutes = require('./routes/shopRoutes');
-const videoRoutes = require('./routes/videoRoutes');
+const mediaRoutes = require('./routes/mediaRoutes');
 const offerRoutes = require('./routes/offerRoutes');
 const itemRoutes = require('./routes/itemRoutes')
 app.use('/api/auth', authRoutes);
@@ -42,9 +42,11 @@ app.use("/api/subcategories", require("./routes/subCategoryRoutes"));
 app.use("/api/notifications", require("./utils/sendNotification"));
 
 app.use('/api/shops', shopRoutes);
-app.use('/api/videos', videoRoutes);
+app.use('/api/media', mediaRoutes);
 app.use('/api/offers', offerRoutes);
 app.use('/api/items', itemRoutes);
+
+app.use("/api/chat", require("./routes/chatRoutes"))
 
 const jwt = require("jsonwebtoken");
 const User = require("./models/User"); // adjust path
@@ -52,14 +54,13 @@ const User = require("./models/User"); // adjust path
 
 io.use((socket, next) => {
   try {
-    const token = socket.handshake.auth?.token;
+    const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization;
 
     if (!token) {
       return next(new Error("No token provided"));
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
     // Attach user info to socket
     socket.userId = decoded.userId || decoded.id;
 
@@ -72,17 +73,17 @@ io.use((socket, next) => {
 
 io.on("connection", async (socket) => {
   const userId = socket.userId;
-
-  console.log("Connected to socket.io:", socket.id, "User:", userId);
-
+  // console.log("Connected to socket.io:", socket.id, "User:", userId);
+   socket.on("joinChat", (chatId) => {
+    socket.join(chatId);
+  });
   // 🟢 Mark online
   await User.findByIdAndUpdate(userId, {
     isOnline: true,
   });
 
   socket.on("disconnect", async () => {
-    console.log("WebSocket disconnected:", socket.id);
-
+    // console.log("WebSocket disconnected:", socket.id);
     // 🔴 Mark offline
     await User.findByIdAndUpdate(userId, {
       isOnline: false,

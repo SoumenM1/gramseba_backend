@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const shopController = require('../controllers/shopController');
 const { protect } = require('../middlewares/authMiddleware');
-const {upload} = require('../middlewares/uploadMiddleware')
+const upload = require('../middlewares/uploadMiddleware')
 
 // Seller creates a shop
 router.post('/create', protect, upload.fields([{ name: 'shopImage' }]),shopController.createShop);

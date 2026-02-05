@@ -1,7 +1,7 @@
 const express = require('express');
 const { register, login, sendOTP, verifyOTP, forgetPassword, getProfile,updateProfile } = require('../controllers/authController');
 const { protect } = require('../middlewares/authMiddleware');
-const {upload }= require('../middlewares/uploadMiddleware')
+const upload = require('../middlewares/uploadMiddleware')
 const router = express.Router();
 
 
