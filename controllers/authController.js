@@ -1,4 +1,3 @@
-const crypto = require("crypto");
 const User = require("../models/User");
 const sendEmail = require("../utils/sendEmail");
 const cloudinary = require("../config/cloudinaryConfig").cloudinary;

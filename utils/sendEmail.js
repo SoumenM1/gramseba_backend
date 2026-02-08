@@ -23,7 +23,7 @@ const sendEmail = async (email, name, otp, forget) => {
           ${otp}
         </div>
         <p>If you didn't request this, please ignore this email or contact our support team.</p>
-        <p>Best regards,<br/>The Grambazer || Gramseba Team</p>
+        <p>Best regards,<br/>The Grambazer || Gramseba Team 🌿</p>
       </div>
     `;
   } else {
@@ -39,18 +39,18 @@ const sendEmail = async (email, name, otp, forget) => {
           ${otp}
         </div>
         <p>If you didn’t request this, please ignore this email or contact our support team.</p>
-        <p>Best regards,<br/>The Grambazer || Gramseba Team</p>
+        <p>Best regards,<br/>The Grambazer || Gramseba Team 🌿</p>
       </div>
     `;
   }
 
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from:`"Gramseba 🌱"<${ process.env.EMAIL_USER}>`,
     to: email,
     subject: subject,
     text: text,
     html: html,
-  };
+  }; 
 
   await transporter.sendMail(mailOptions);
 };
