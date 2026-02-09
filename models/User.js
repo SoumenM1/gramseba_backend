@@ -19,6 +19,26 @@ const userSchema = new mongoose.Schema(
     imagePublicId: { type: String, default: null },
     followersCount: { type: Number, default: 0 },
     followingCount: { type: Number, default: 0 },
+    // 🔔 PUSH TOKEN
+    expoPushToken: {
+      type: String,
+      default: null,
+      index: true,
+    },
+
+    // 📍 REAL-TIME LOCATION (GeoJSON)
+    location: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point",
+      },
+      coordinates: {
+        type: [Number], // [lng, lat]
+        default: null,
+      },
+      updatedAt: Date,
+    },
   },
   { timestamps: true },
 );

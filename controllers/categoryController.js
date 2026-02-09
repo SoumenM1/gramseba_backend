@@ -12,7 +12,7 @@ exports.getRecentCategories = async (req, res) => {
     if (recent.length === 0) {
       const fallback = await Category.find({ isActive: true })
         .sort({ createdAt: -1 }) 
-        .limit(6);
+        .limit(10)
 
       return res.status(200).json({
         source: "default",

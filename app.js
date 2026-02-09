@@ -1,9 +1,9 @@
-const express = require('express');
-const cors = require('cors')
-const http = require('http');
-const socketUtil = require('./utils/socket'); 
-const dotenv = require('dotenv');
-const connectDB = require('./config/db');
+const express = require("express");
+const cors = require("cors");
+const http = require("http");
+const socketUtil = require("./utils/socket");
+const dotenv = require("dotenv");
+const connectDB = require("./config/db");
 
 dotenv.config();
 connectDB();
@@ -21,40 +21,43 @@ const io = socketUtil.init(server);
 // }));
 app.use(express.json());
 
-  app.use(cors({
-  origin: "*",
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-}))
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 
 // Setup routes
-app.get('/',(req,res)=>{
-    res.send('This is grambazer server');
-})
-const authRoutes = require('./routes/authRoutes');
-const shopRoutes = require('./routes/shopRoutes');
-const mediaRoutes = require('./routes/mediaRoutes');
-const offerRoutes = require('./routes/offerRoutes');
-const itemRoutes = require('./routes/itemRoutes')
-app.use('/api/auth', authRoutes);
+app.get("/", (req, res) => {
+  res.send("This is grambazer server");
+});
+const authRoutes = require("./routes/authRoutes");
+const shopRoutes = require("./routes/shopRoutes");
+const mediaRoutes = require("./routes/mediaRoutes");
+const offerRoutes = require("./routes/offerRoutes");
+const itemRoutes = require("./routes/itemRoutes");
+app.use("/api/auth", authRoutes);
 app.use("/api/categories", require("./routes/categoryRoutes"));
 app.use("/api/subcategories", require("./routes/subCategoryRoutes"));
 app.use("/api/notifications", require("./utils/sendNotification"));
+app.use("/api", require("./utils/sendNotification"));
 
-app.use('/api/shops', shopRoutes);
-app.use('/api/media', mediaRoutes);
-app.use('/api/offers', offerRoutes);
-app.use('/api/items', itemRoutes);
+app.use("/api/shops", shopRoutes);
+app.use("/api/media", mediaRoutes);
+app.use("/api/offers", offerRoutes);
+app.use("/api/items", itemRoutes);
 
-app.use("/api/chat", require("./routes/chatRoutes"))
+app.use("/api/chat", require("./routes/chatRoutes"));
 
 const jwt = require("jsonwebtoken");
 const User = require("./models/User"); // adjust path
 
-
 io.use((socket, next) => {
   try {
-    const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization;
+    const token =
+      socket.handshake.auth?.token || socket.handshake.headers?.authorization;
 
     if (!token) {
       return next(new Error("No token provided"));
@@ -74,7 +77,7 @@ io.use((socket, next) => {
 io.on("connection", async (socket) => {
   const userId = socket.userId;
   // console.log("Connected to socket.io:", socket.id, "User:", userId);
-   socket.on("joinChat", (chatId) => {
+  socket.on("joinChat", (chatId) => {
     socket.join(chatId);
   });
   // 🟢 Mark online
@@ -90,7 +93,6 @@ io.on("connection", async (socket) => {
     });
   });
 });
-
 
 // Server listening
 const PORT = process.env.PORT || 5000;
