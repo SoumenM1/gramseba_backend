@@ -12,11 +12,12 @@ const sendNotificationToUsers = async () => {
     const notification = {
       title: "💖 Valentine’s Day Special",
       body: "Love is in the air 🌹 Special offers near you 💝",
-      image: "https://res.cloudinary.com/dvfs7vdry/image/upload/v1770616988/val_kpha9m.jpg",
-      data: { "type": "VALENTINE" }
+      image:
+        "https://res.cloudinary.com/dvfs7vdry/image/upload/v1770616988/val_kpha9m.jpg",
+      data: { type: "VALENTINE" },
     };
 
-    if (user?.isOnline ) {
+    if (user?.isOnline) {
       io.emit("notification", notification);
     } else if (user.expoPushToken) {
       await sendExpoPush(user.expoPushToken, notification);
@@ -40,7 +41,7 @@ async function sendExpoPush(token, notification) {
   });
 }
 
-router.get("/", (req, res) => {
+router.get("/notifications", (req, res) => {
   // const io = socketUtil.getIO();
   // io.on("setup", (userData) => {
   //   socket.join(userData.userId);

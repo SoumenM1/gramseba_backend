@@ -41,7 +41,7 @@ const itemRoutes = require("./routes/itemRoutes");
 app.use("/api/auth", authRoutes);
 app.use("/api/categories", require("./routes/categoryRoutes"));
 app.use("/api/subcategories", require("./routes/subCategoryRoutes"));
-app.use("/api/notifications", require("./utils/sendNotification"));
+// app.use("/api/notifications", require("./utils/sendNotification"));
 app.use("/api", require("./utils/sendNotification"));
 
 app.use("/api/shops", shopRoutes);
