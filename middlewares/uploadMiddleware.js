@@ -29,6 +29,7 @@ const fileFilter = (req, file, cb) => {
     "image/jpeg",
     "image/png",
     "image/webp",
+    "image/svg",
     "video/mp4",
     "video/quicktime",
   ];
@@ -37,8 +38,9 @@ const fileFilter = (req, file, cb) => {
     cb(null, true);
   } else {
     cb(
-      new Error("Only image and video files are allowed"),
+    // new Error("Only image and video files are allowed"),
       false
+  
     );
   }
 };

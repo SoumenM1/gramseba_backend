@@ -228,9 +228,6 @@ exports.updateProfile = async (req, res) => {
   try {
     const userId = req.user._id; // from auth middleware
     const { name, bio, dob, gender } = req.body;
-    if (!name || !bio || !dob || !gender) {
-      return res.status(400).json({ message: "fields is required" });
-    }
     const updateData = { name, bio, dob, gender };
     const user = await User.findById(userId);
     // ✅ If user uploads an image

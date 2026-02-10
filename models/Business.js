@@ -1,14 +1,12 @@
 const businessSchema = new mongoose.Schema({
   name: String,
   logo: String,
+  baner:String,
   description: String,
-
   owner: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-
+  Category:[{ type: mongoose.Schema.Types.ObjectId, ref: "Category" }],
   services: [String],
-
   followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-
   location: {
     type: { type: String, default: "Point" },
     coordinates: [Number], // lng, lat

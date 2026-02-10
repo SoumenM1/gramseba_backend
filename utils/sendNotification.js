@@ -19,7 +19,7 @@ const sendNotificationToUsers = async () => {
 
     if (user?.isOnline) {
       io.emit("notification", notification);
-    } else if (user.expoPushToken) {
+    } else if (user?.expoPushToken) {
       await sendExpoPush(user.expoPushToken, notification);
     }
   }

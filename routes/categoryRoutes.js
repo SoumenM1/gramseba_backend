@@ -10,10 +10,11 @@ const {
 } = require("../controllers/categoryController");
 const { protect } = require("../middlewares/authMiddleware");
 
+
 router.get("/recent",protect, getRecentCategories);
 router.post("/track", protect, trackCategoryClick);
 router.post("/",protect, createCategory);
-router.get("/", protect, getCategories);
+router.get("/all", protect, getCategories);
 router.put("/:id",protect, updateCategory);
 router.delete("/:id",protect, deleteCategory);
 

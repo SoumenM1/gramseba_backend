@@ -2,86 +2,63 @@ const fs = require("fs");
 const cloudinary = require("../config/cloudinaryConfig").cloudinary;
 const Media = require("../models/Media");
 
-exports.uploadVideo = async (req, res) => {
+exports.createMedia = async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ message: "No video file uploaded" });
+    const {
+      title,
+      description,
+      mediaUrl,
+      mediaPublicId,
+      mediaType,      // "image" | "video"
+      thumbnailUrl,   // optional (video)
+    } = req.body;
+
+    // 🔴 Basic validation
+    if (!mediaUrl || !mediaPublicId || !mediaType) {
+      return res.status(400).json({
+        message: "mediaUrl, mediaPublicId and mediaType are required",
+      });
     }
 
-    // ☁️ Upload to Cloudinary (HLS)
-    const result = await cloudinary.uploader.upload(req.file.path, {
-      folder: "gram_bazer/videos",
-      resource_type: "video",
-      eager: [
-        {
-          streaming_profile: "hd",
-          format: "m3u8",
-        },
-      ],
-      eager_async: true,
-    });
+    if (!["image", "video"].includes(mediaType)) {
+      return res.status(400).json({ message: "Invalid media type" });
+    }
 
-    // 🧹 Delete local file
-    fs.unlink(req.file.path, (err) => {
-      if (err) console.error("File cleanup error:", err);
-    });
+    // 🔐 Security check (important)
+    if (!mediaUrl.includes("res.cloudinary.com")) {
+      return res.status(400).json({ message: "Invalid media source" });
+    }
 
-    // 💾 Save media record
-    const media = await Media.create({
-      title: req.body.title,
-      description: req.body.description,
-      mediaUrl: result.eager?.[0]?.secure_url, // HLS URL
-      mediaPublicId: result.public_id,
-      thumbnailUrl: result.secure_url.replace(".mp4", ".jpg"), // optional
-      mediaType: "video",
-      user: req.user.id,
+    // 📦 Common payload
+    const payload = {
+      title,
+      description,
+      mediaUrl,
+      mediaPublicId,
+      mediaType,
+      user: req.user._id,
       visibility: "public",
-    });
+    };
+
+    // 🎥 Video-only fields
+    if (mediaType === "video") {
+      payload.thumbnailUrl = thumbnailUrl || null;
+    }
+
+    // 💾 Save media
+    const media = await Media.create(payload);
 
     return res.status(201).json({
       success: true,
-      message: "video upload",
+      message: `${mediaType} uploaded successfully`,
+      media,
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
 };
 
-exports.uploadImage = async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: "No image uploaded" });
-    }
 
-    const result = await cloudinary.uploader.upload(req.file.path, {
-      folder: "gram_bazer/images",
-      resource_type: "image",
-      transformation: [
-        { width: 1080, height: 1080, crop: "limit" },
-        { quality: "auto" },
-        { fetch_format: "auto" },
-      ],
-    });
-
-    fs.unlink(req.file.path, (err) => {
-      if (err) console.error("File cleanup error:", err);
-    });
-
-    const media = await Media.create({
-      title: req.body.title,
-      description: req.body.description,
-      mediaUrl: result.secure_url,
-      mediaPublicId: result.public_id,
-      mediaType: "image",
-      user: req.user.id,
-      visibility: "public",
-    });
-
-    return res.status(201).json({ success: true, message: "image upload" });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
 
 exports.getFeed = async (req, res) => {
   try {
