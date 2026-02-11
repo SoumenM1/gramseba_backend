@@ -1,4 +1,4 @@
-const KYC = require("../models/KYC");
+const KYC = require("../models/Kyc");
 
 // ===============================
 // 1. Submit or Create KYC
