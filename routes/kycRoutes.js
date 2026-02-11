@@ -1,11 +1,15 @@
-// routes/kyc.routes.js
-const router = require("express").Router();
-const auth = require("../middleware/auth");
-const controller = require("../controllers/kyc.controller");
+const express = require("express");
+const router = express.Router();
+const kycController = require("../controllers/kycController");
+const { protect, admin } = require("../middlewares/authMiddleware");
 
-router.post("/", auth, controller.submitKYC);
+// User routes
+router.post("/submit", protect, kycController.submitKYC);
+router.get("/me", protect, kycController.getMyKYC);
 
-// 🔒 Admin only (add admin middleware later)
-router.put("/:id/verify", controller.verifyKYC);
+// Admin routes
+// router.get("/all", protect, admin, kycController.getAllKYC);
+// router.put("/verify/:kycId", protect, admin, kycController.verifyKYC);
+// router.put("/reject/:kycId", protect, admin, kycController.rejectKYC);
 
 module.exports = router;

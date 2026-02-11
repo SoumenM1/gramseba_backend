@@ -34,20 +34,21 @@ app.get("/", (req, res) => {
   res.send("This is grambazer server");
 });
 const authRoutes = require("./routes/authRoutes");
-const shopRoutes = require("./routes/shopRoutes");
+// const shopRoutes = require("./routes/shopRoutes");
 const mediaRoutes = require("./routes/mediaRoutes");
 const offerRoutes = require("./routes/offerRoutes");
-const itemRoutes = require("./routes/itemRoutes");
+// const itemRoutes = require("./routes/itemRoutes");
 app.use("/api/auth", authRoutes);
 app.use("/api/categories", require("./routes/categoryRoutes"));
 app.use("/api/subcategories", require("./routes/subCategoryRoutes"));
 // app.use("/api/notifications", require("./utils/sendNotification"));
 app.use("/api", require("./utils/sendNotification"));
-
-app.use("/api/shops", shopRoutes);
+app.use("/api/business", require("./routes/businessRoutes"))
+app.use("/api/kyc", require("./routes/kycRoutes"));
+// app.use("/api/shops", shopRoutes);
 app.use("/api/media", mediaRoutes);
 app.use("/api/offers", offerRoutes);
-app.use("/api/items", itemRoutes);
+// app.use("/api/items", itemRoutes);
 
 app.use("/api/chat", require("./routes/chatRoutes"));
 

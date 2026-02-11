@@ -58,8 +58,6 @@ exports.createMedia = async (req, res) => {
   }
 };
 
-
-
 exports.getFeed = async (req, res) => {
   try {
     const limit = Math.min(Number(req.query.limit) || 10, 20);
