@@ -4,19 +4,62 @@ const socketUtil = require("./socket");
 const User = require("../models/User");
 const { protect } = require("../middlewares/authMiddleware");
 
-const sendNotificationToUsers = async () => {
-  const io = socketUtil.getIO();
-  const onlineUsers = await User.find({}); // get all users
 
-  for (let user of onlineUsers) {
-    const notification = {
+function getTodaySpecialNotification(user) {
+  const today = new Date();
+  const day = today.getDate();
+  const month = today.getMonth() + 1; // 0 index fix
+
+  // 🎂 Birthday
+  if (
+    user?.dob &&
+    new Date(user.dob).getDate() === day &&
+    new Date(user.dob).getMonth() + 1 === month
+  ) {
+    return {
+      title: `🎂 Happy Birthday ${user.name}!`,
+      body: "Wishing you a fantastic year ahead 🎉",
+      image: "https://yourcdn.com/birthday.jpg",
+      data: { type: "BIRTHDAY" },
+    };
+  }
+
+  // 💖 Valentine's Day (14 Feb)
+  if (day === 14 && month === 2) {
+    return {
       title: "💖 Valentine’s Day Special",
       body: "Love is in the air 🌹 Special offers near you 💝",
       image:
         "https://res.cloudinary.com/dvfs7vdry/image/upload/v1770616988/val_kpha9m.jpg",
       data: { type: "VALENTINE" },
     };
+  }
 
+  // 🎨 Holi (Example: 14 March 2026 - update yearly)
+  if (day === 14 && month === 3) {
+    return {
+      title: "🎨 Happy Holi!",
+      body: "Celebrate colors with amazing local offers 🌈",
+      image: "https://yourcdn.com/holi.jpg",
+      data: { type: "HOLI" },
+    };
+  }
+
+  // 🎉 Default Notification
+  return {
+    title: "🔥 Special Offers Near You",
+    body: "Check out the latest deals around you",
+    image: "https://yourcdn.com/default.jpg",
+    data: { type: "GENERAL" },
+  };
+}
+
+const sendNotificationToUsers = async () => {
+  const io = socketUtil.getIO();
+  const onlineUsers = await User.find({}); // get all users
+
+  for (let user of onlineUsers) {
+    const notification = getTodaySpecialNotification(user);
     if (user?.isOnline) {
       io.emit("notification", notification);
     } else if (user?.expoPushToken) {
