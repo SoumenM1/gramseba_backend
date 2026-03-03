@@ -13,8 +13,8 @@ function getTodaySpecialNotification(user) {
   // 🎂 Birthday
   if (
     user?.dob &&
-    new Date(user.dob).getDate() === day &&
-    new Date(user.dob).getMonth() + 1 === month
+    new Date(user?.dob).getDate() === day &&
+    new Date(user?.dob).getMonth() + 1 === month
   ) {
     return {
       title: `🎂 Happy Birthday ${user.name}!`,
@@ -36,7 +36,7 @@ function getTodaySpecialNotification(user) {
   }
 
   // 🎨 Holi (Example: 14 March 2026 - update yearly)
-  if (day === 14 && month === 3) {
+  if (day === 3 && month === 3) {
     return {
       title: "🎨 Happy Holi!",
       body: "Celebrate colors with amazing local offers 🌈",
