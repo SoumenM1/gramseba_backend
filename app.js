@@ -6,7 +6,7 @@ const socketUtil = require("./utils/socket");
 const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 const redis = require("./config/redis");
-const registerCallHandlers = require("./utils/callHandler");
+// const registerCallHandlers = require("./utils/callHandler");
 dotenv.config();
 connectDB();
 redis.connect().then(() => console.log("✅ Connected to Redis")).catch((err) => console.error("Redis connection error:", err));
