@@ -6,6 +6,7 @@ const socketUtil = require("./utils/socket");
 const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 const redis = require("./config/redis");
+const morgan = require("morgan");
 // const registerCallHandlers = require("./utils/callHandler");
 dotenv.config();
 connectDB();
@@ -31,7 +32,7 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
-
+app.use(morgan("combined"));
 // Setup routes
 app.get("/", (req, res) => {
   res.send("This is grambazer server");
