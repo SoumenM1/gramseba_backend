@@ -1,6 +1,7 @@
 const fs = require("fs");
 const cloudinary = require("../config/cloudinaryConfig").cloudinary;
 const Media = require("../models/Media");
+const redis = require("../config/redis");
 
 exports.createMedia = async (req, res) => {
   try {
@@ -9,8 +10,8 @@ exports.createMedia = async (req, res) => {
       description,
       mediaUrl,
       mediaPublicId,
-      mediaType,      // "image" | "video"
-      thumbnailUrl,   // optional (video)
+      mediaType, // "image" | "video"
+      thumbnailUrl, // optional (video)
     } = req.body;
 
     // 🔴 Basic validation
@@ -47,7 +48,7 @@ exports.createMedia = async (req, res) => {
 
     // 💾 Save media
     const media = await Media.create(payload);
-
+    await redis.del("feed:latest");
     return res.status(201).json({
       success: true,
       message: `${mediaType} uploaded successfully`,
@@ -62,8 +63,18 @@ exports.getFeed = async (req, res) => {
   try {
     const limit = Math.min(Number(req.query.limit) || 10, 20);
     const cursor = req.query.cursor;
-
+    let nextCursor = null;
+    const cacheKey = "feed:latest";
     const query = { visibility: "public" };
+    const cachedData = await redis.get(cacheKey);
+    if (cachedData) {
+      const items = JSON.parse(cachedData);
+      return res.json({
+        success: true,
+        data: items,
+        nextCursor,
+      });
+    }
 
     if (cursor) {
       query.createdAt = { $lt: new Date(cursor) };
@@ -75,12 +86,13 @@ exports.getFeed = async (req, res) => {
       .populate("user", "name imageUrl")
       .lean();
 
-    let nextCursor = null;
+    
 
     if (items.length > limit) {
       nextCursor = items[limit - 1].createdAt;
       items.pop();
     }
+    await redis.set(cacheKey, JSON.stringify(items), "EX", 60);
 
     res.json({
       success: true,
@@ -88,6 +100,7 @@ exports.getFeed = async (req, res) => {
       nextCursor,
     });
   } catch (err) {
+    console.error("Error fetching feed:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
@@ -110,4 +123,3 @@ exports.startLive = async (req, res) => {
     res.status(500).json({ message: "Live start failed" });
   }
 };
-

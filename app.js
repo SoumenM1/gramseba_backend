@@ -1,12 +1,15 @@
 const express = require("express");
 const cors = require("cors");
 const http = require("http");
+const compression = require("compression");
 const socketUtil = require("./utils/socket");
 const dotenv = require("dotenv");
 const connectDB = require("./config/db");
-
+const redis = require("./config/redis");
+const registerCallHandlers = require("./utils/callHandler");
 dotenv.config();
 connectDB();
+redis.connect().then(() => console.log("✅ Connected to Redis")).catch((err) => console.error("Redis connection error:", err));
 
 const app = express();
 const server = http.createServer(app);
@@ -20,7 +23,7 @@ const io = socketUtil.init(server);
 //   message: 'Too many requests from this IP, please try again after 15 minutes',
 // }));
 app.use(express.json());
-
+app.use(compression());
 app.use(
   cors({
     origin: "*",
@@ -95,6 +98,7 @@ io.on("connection", async (socket) => {
   });
 });
 
+// registerCallHandlers();
 // Server listening
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`🔛Server running on port ${PORT}`));
