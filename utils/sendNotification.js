@@ -4,7 +4,6 @@ const socketUtil = require("./socket");
 const User = require("../models/User");
 const { protect } = require("../middlewares/authMiddleware");
 
-
 function getTodaySpecialNotification(user) {
   const today = new Date();
   const day = today.getDate();
@@ -19,39 +18,59 @@ function getTodaySpecialNotification(user) {
     return {
       title: `🎂 Happy Birthday ${user.name}!`,
       body: "Wishing you a fantastic year ahead 🎉",
-      image: "https://yourcdn.com/birthday.jpg",
-      data: { type: "BIRTHDAY" },
+      data: { type: "BIRTHDAY", image: user?.imageUrl },
+      richContent: {
+        image: user?.imageUrl,
+      },
     };
   }
 
   // 💖 Valentine's Day (14 Feb)
-  if (day === 14 && month === 2) {
+  else if (day === 14 && month === 2) {
     return {
       title: "💖 Valentine’s Day Special",
       body: "Love is in the air 🌹 Special offers near you 💝",
-      image:
-        "https://res.cloudinary.com/dvfs7vdry/image/upload/v1770616988/val_kpha9m.jpg",
-      data: { type: "VALENTINE" },
+      data: {
+        type: "VALENTINE",
+        image:
+          "https://res.cloudinary.com/dvfs7vdry/image/upload/v1770616988/val_kpha9m.jpg",
+      },
+      richContent: {
+        image:
+          "https://res.cloudinary.com/dvfs7vdry/image/upload/v1770616988/val_kpha9m.jpg",
+      },
     };
   }
 
   // 🎨 Holi (Example: 14 March 2026 - update yearly)
-  if (day === 3 && month === 3) {
+  else if (day === 3 && month === 3) {
     return {
       title: "🎨 Happy Holi!",
       body: "Celebrate colors with amazing local offers 🌈",
       image: "https://yourcdn.com/holi.jpg",
-      data: { type: "HOLI" },
+      data: { type: "HOLI", image: "https://yourcdn.com/holi.jpg" },
+      richContent: {
+        image: "https://yourcdn.com/holi.jpg",
+      },
     };
   }
 
   // 🎉 Default Notification
-  return {
-    title: "🔥 Special Offers Near You",
-    body: "Check out the latest deals around you",
-    image: "https://yourcdn.com/default.jpg",
-    data: { type: "GENERAL" },
-  };
+  else {
+    return {
+      title: "🔥 Special Offers Near You",
+      body: "Check out the latest deals around you",
+      data: {
+        type: "OFFER",
+        image:
+          "https://res.cloudinary.com/dvfs7vdry/image/upload/v1770616988/val_kpha9m.jpg",
+      },
+      richContent: {
+        image:
+          "https://res.cloudinary.com/dvfs7vdry/image/upload/v1770616988/val_kpha9m.jpg",
+      },
+    };
+  }
 }
 
 const sendNotificationToUsers = async () => {
@@ -79,7 +98,10 @@ async function sendExpoPush(token, notification) {
       title: notification.title,
       body: notification.body,
       sound: "default",
-      data: { image: notification.image, type: "VALENTINE" },
+      data: { image: notification.data.image, type: notification.data.type },
+      richContent: {
+        image: notification.data.image,
+      },
     }),
   });
 }

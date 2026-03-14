@@ -17,7 +17,7 @@ const server = http.createServer(app);
 // Initialize Socket.io
 const io = socketUtil.init(server);
 
-// app.use(morgan('combined'));
+app.use(morgan('combined'));
 // app.use(rateLimit({
 //   windowMs: 15 * 60 * 1000, // 15 minutes
 //   max: 100, // limit each IP to 100 requests per windowMs
@@ -32,7 +32,7 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
-app.use(morgan("combined"));
+
 // Setup routes
 app.get("/", (req, res) => {
   res.send("This is grambazer server");
